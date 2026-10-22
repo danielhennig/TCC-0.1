@@ -18,7 +18,7 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 [tool.mypy]
 python_version = "3.11"
 mypy_path = "src"
-packages = ["sacla", "simlab"]
+packages = ["sacla", "simlab", "evaluation"]
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true

@@ -74,6 +74,11 @@ def simulate(extra: list[str]) -> None:
     run([*RUN, "python", "-m", "simlab.cli", "simulate", *extra])
 
 
+def features(extra: list[str]) -> None:
+    """Monta o conjunto rotulado de uma execução (ex.: --window 5 --run-id sim-s42-28d)."""
+    run([*RUN, "python", "-m", "evaluation.cli", "features", *extra])
+
+
 def retime(extra: list[str]) -> None:
     """Refaz só o remapeamento de horários de uma execução (mesmos --seed/--days)."""
     run([*RUN, "python", "-m", "simlab.cli", "retime", *extra])
@@ -121,6 +126,7 @@ TASKS: dict[str, Callable[[list[str]], None]] = {
     "bench": bench,
     "simulate": simulate,
     "retime": retime,
+    "features": features,
     "test": test,
     "lint": lint,
     "fmt": fmt,

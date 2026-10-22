@@ -279,3 +279,115 @@ com as linhas gravadas na view (16), enquanto o cliente recebe `rowcount = -1`. 
 eventos 26 e 4137 da execução de 2 dias. **Consequência para a Fase 3:** as linhas do plano
 de um comando utilitário não são "linhas retornadas ao cliente"; o parser precisa classificar
 o comando antes de atribuir as linhas do plano.
+
+## 7. Leitura, tratamento e agregação (Fase 3)
+
+**D26 — Leitura (`sacla/reader.py`, módulo 1).**
+- Lê arquivos `.json`, `.json.gz`, `.jsonl` e `.jsonl.gz` em ordem de nome, que acompanha a
+  rotação.
+- Uma linha que não é JSON, não é objeto ou não tem horário válido é descartada e contada como
+  malformada.
+- A última linha de um arquivo, sem quebra de linha e incompleta (arquivo ainda em gravação),
+  é contada à parte como truncada. Um `.gz` cortado no meio também: as linhas anteriores ao
+  corte são mantidas.
+- Campos ausentes ou de tipo errado viram nulos; campos desconhecidos são ignorados, como
+  recomenda a documentação ("applications … should ignore unknown fields").
+- O horário aceita deslocamento numérico (`-03`) e as abreviações de
+  `reader.zone_offsets_min` (padrão `UTC` e `GMT`). Uma abreviação desconhecida (ex.: `CET`) é
+  contada à parte, com erro explícito, em vez de sumir entre as malformadas. Recomendado:
+  `log_timezone = 'UTC'`.
+
+**D27 — Eventos (`sacla/events.py`, módulo 2a).** Cada linha de cliente vira um de cinco
+eventos:
+
+| Evento | Origem no log |
+|---|---|
+| comando concluído | `duration: … statement:` ou `… execute <nome>:` |
+| comando com erro | `ERROR` com o campo `statement` |
+| falha de autenticação | `FATAL` com SQLSTATE 28P01 ou 28000 |
+| conexão | `connection authorized` |
+| desconexão | `disconnection` |
+
+Regras:
+- As linhas `parse` e `bind` do protocolo estendido não são comandos.
+- Linhas sem `user` (`connection received`) herdam o usuário da sessão.
+- Processos de fundo e usuários administrativos (`postgres`) são ignorados.
+- O plano do auto_explain é ligado ao comando pela sessão **e** pelo texto (`Query Text` = texto
+  do comando). No protocolo simples o plano chega antes; no estendido, depois da linha
+  `execute`. Os dois casos são tratados.
+- Linhas e tabelas do plano só são atribuídas a SELECT/INSERT/UPDATE/DELETE: o plano de um
+  `REFRESH MATERIALIZED VIEW` não vira "linhas retornadas".
+- Partições contam como a tabela pai (`payment_pAAAA_MM` → `payment`).
+- Num erro de permissão, a tabela vem da mensagem (`permission denied for table staff`).
+
+**D28 — Classificação do comando (`sacla/sqlclass.py`).** Classes: SELECT, INSERT, UPDATE,
+DELETE, DDL, TCL e OTHER. A classe vem da primeira palavra-chave fora de comentários, literais
+e parênteses. Parênteses iniciais são ignorados (`(SELECT …) UNION …` é SELECT), e um `WITH` é
+classificado pelo comando principal depois das CTEs (`WITH … UPDATE` é UPDATE). TCL
+(`BEGIN`/`COMMIT`) não entra na contagem de comandos nem nas durações.
+
+**D29 — Atributos por usuário × janela (`sacla/features.py`, módulo 2b).** Janelas fixas
+`[t, t+5 min)`, alinhadas ao relógio. Só existem janelas com pelo menos um evento do usuário.
+
+| Atributo | Definição |
+|---|---|
+| `n_commands` | comandos (concluídos ou com erro), sem TCL |
+| `n_select` … `n_other` | comandos por classe |
+| `n_errors`, `n_permission_denied` | comandos com erro; com SQLSTATE 42501 |
+| `n_auth_failures`, `n_connections` | falhas de autenticação; conexões autorizadas |
+| `rows_returned_sum`, `rows_returned_max` | linhas retornadas (nó raiz do plano) |
+| `rows_affected_sum` | linhas afetadas por INSERT/UPDATE/DELETE (filho do ModifyTable) |
+| `duration_mean_ms`, `duration_max_ms`, `duration_p95_ms` | duração dos comandos concluídos |
+| `n_tables`, `n_ips` | tabelas distintas (do plano ou da mensagem de permissão); IPs distintos |
+| `hour_sin`, `hour_cos`, `weekend` | hora do início da janela (fuso local), codificação cíclica; sábado/domingo |
+| `z_commands` | (comandos − mediana do usuário) / max(1,4826·MAD, 1) |
+| `z_rows_returned` | idem, sobre log(1 + linhas retornadas) |
+| `hour_surprisal` | −log da frequência (suavização de Laplace, α = 1) daquela hora no histórico do usuário |
+| `new_tables_frac`, `new_ips_frac`, `new_query_shapes_frac` | fração de tabelas, IPs e formatos de consulta (`query_id`) da janela nunca vistos no histórico do usuário |
+
+Notas:
+- **Histórico sem vazamento.** Os atributos relativos usam só janelas que *terminam* até o fim
+  do treino (`history_end`, de `run.json`). Além disso, a montagem do conjunto recusa
+  tamanhos de janela que não dividem os limites dos splits (ex.: 7 min), para que nenhuma
+  janela atravesse de um split para outro. Testes:
+  `test_changing_data_after_history_end_does_not_change_baselines` e
+  `test_window_crossing_history_end_is_not_part_of_history`.
+- **Sem rótulos no histórico.** O histórico usa todas as janelas do treino, inclusive as
+  anômalas, porque o SACLA é não supervisionado e não conhece rótulos; a contaminação do
+  treino (0,40% das janelas) fica documentada.
+- **Usuário sem histórico.** Recebe referência neutra: z sobre zero, hora com probabilidade
+  1/24, tudo "inédito".
+- **Formatos de consulta inéditos.** Este atributo vai além da lista mínima. Foi incluído porque
+  o tipo inédito (`leitura_atipica`) usa tabelas permitidas e já conhecidas; o único sinal
+  genérico é o formato de consulta novo para o usuário.
+- **Transformação `log1p`** das contagens: é decisão do modelo e será avaliada na validação
+  (Fase 4).
+
+**D30 — Regra de rótulo (`evaluation/labels.py`).** A janela `[t, t+Δ)` do usuário *u* é
+anômala se, e somente se, existe um cenário do manifesto com usuário *u* e intervalo
+`[início, fim)` tal que `início < t+Δ` e `t < fim`. Detalhes:
+- Os intervalos são semiabertos: uma janela que termina exatamente no início de um cenário, ou
+  começa exatamente no fim dele, não é anômala.
+- Com vários cenários na mesma janela, todos ficam em `scenario_ids`; tipo, intensidade e
+  "inédito" vêm do de maior sobreposição, e `overlap_frac` registra a fração coberta.
+- O split de cada janela vem do seu início.
+- Testes: `tests/test_labels.py`.
+
+**D31 — Conferência com o executor (`evaluation/crosscheck.py`).** Ao montar o conjunto de
+dados, os eventos do SACLA são comparados, por usuário, com o que o executor de fato fez
+(comandos, comandos com erro, falhas de login, conexões e linhas). Qualquer diferença faz a
+montagem falhar sem gravar o conjunto de dados; só o resumo é gravado, para diagnóstico.
+
+Resultado na execução de referência (`python tasks.py features`, janela de 5 min):
+
+| Medida | Valor |
+|---|---|
+| Linhas lidas / malformadas / truncadas | 207.177 / 0 / 0 (29 arquivos) |
+| Eventos / planos sem par / planos ilegíveis | 110.410 / 0 / 0 |
+| Linhas ignoradas | 2.829 = `connection received` (1.781) + `connection authenticated` (1.048) |
+| Conferência (comandos, erros, falhas de login, conexões, linhas) | 107.581 · 447 · 733 · 1.048 · 2.744.038 — **iguais ao executor para os 10 usuários** |
+| Janelas: treino / validação / teste | 9.113 / 4.682 / 4.640 |
+| Janelas anômalas (contaminação) | 36 (0,40%) / 175 (3,74%) / 319 (6,88%) |
+| Tempo: leitura + eventos / agregação | 7,7 s / 2,8 s |
+
+A execução de 2 dias passa pela mesma conferência (8.224 comandos, iguais por usuário).

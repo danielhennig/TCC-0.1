@@ -65,6 +65,11 @@ simulation:
   # desconexão, podem ser gravadas depois de eventos posteriores).
   retime_reorder_window: 20000
 
+# Conjunto de dados e avaliação (Fases 3 e 4).
+evaluation:
+  features_dir: data/features         # janelas rotuladas (parquet), não versionadas
+  results_dir: results/dataset        # resumos versionados
+
 # Divisão temporal (frações do período simulado, em ordem).
 split:
   train: 0.50

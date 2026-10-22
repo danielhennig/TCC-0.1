@@ -7,9 +7,10 @@ aprendizado de máquina não supervisionado** (Isolation Forest).
 scripts de simulação → PostgreSQL 18 + Pagila → logs JSON (jsonlog) → SACLA → relatório de anomalias
 ```
 
-> Estado atual: **Fases 1 e 2 concluídas** (ambiente, logs, usuários, simuladores, manifesto e
-> remapeamento de horários). As fases 3 a 5 (parser e agregação, modelo e avaliação, relatórios)
-> virão a seguir. Instalação completa, resultados e limitações serão documentados aqui na Fase 5.
+> Estado atual: **Fases 1 a 3 concluídas** (ambiente e logs; usuários, simuladores, manifesto e
+> remapeamento de horários; leitura, eventos, atributos por janela e rótulos). As fases 4 e 5
+> (modelo e avaliação; relatórios) virão a seguir. Instalação completa, resultados e limitações
+> serão documentados aqui na Fase 5.
 
 ## Pré-requisitos
 
@@ -24,6 +25,7 @@ python tasks.py smoke   # gera eventos conhecidos e mostra/confere as linhas rea
 python tasks.py bench   # mede o overhead do registro de comandos e do auto_explain
 python tasks.py simulate            # 28 dias simulados (recria banco e logs antes)
 python tasks.py simulate --days 2   # execução curta de verificação
+python tasks.py features            # janelas de 5 min com atributos e rótulos (--window N)
 python tasks.py test    # testes (pytest)
 python tasks.py lint    # ruff + mypy
 ```
@@ -40,6 +42,11 @@ Cada simulação grava em `data/runs/sim-s<semente>-<dias>d/`:
 | `retimed/` | log remapeado para o tempo simulado, um arquivo por dia: **é o que o SACLA lê** |
 | `retime_report.json`, `simulation_report.json` | verificações e números da execução |
 
+`python tasks.py features` lê `retimed/` com o SACLA e grava em `data/features/<run_id>/`
+(`w5m.parquet`: uma linha por usuário × janela, com atributos, split e rótulo). Um resumo
+versionado vai para `results/dataset/<run_id>/`. A montagem falha se os eventos extraídos não
+baterem, usuário por usuário, com o que o executor fez.
+
 Outros comandos: `python tasks.py --help`. Com `make` disponível, `make setup` etc. também
 funcionam.
 
@@ -50,8 +57,9 @@ As senhas são do laboratório local e ficam em `.env`, criado a partir de `.env
 ```
 config/            configuração do experimento (YAML)
 docker/            imagens do PostgreSQL (com Pagila e sacla.conf) e do Python
-src/sacla/         o sistema SACLA (Fases 3–5)
+src/sacla/         o sistema SACLA: reader (1), events/sqlclass/features (2), modelo e relatório (Fases 4–5)
 src/simlab/        bancada experimental: provisionamento, simulação, verificações
+src/evaluation/    rótulos, conjunto de dados, conferência; métricas e baseline (Fase 4)
 tests/             testes pytest e linhas reais de log (fixtures)
 results/           resultados versionados (ex.: results/ambiente/)
 docs/decisoes.md   decisões técnicas, com fontes e evidências

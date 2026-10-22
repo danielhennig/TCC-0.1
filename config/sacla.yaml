@@ -1,0 +1,31 @@
+# Configuração do SACLA (leitura, tratamento e agregação dos logs).
+# Independente da simulação: vale para qualquer jsonlog com a configuração de docs/decisoes.md.
+
+reader:
+  # Arquivos lidos em ordem de nome, que no PostgreSQL acompanha a rotação.
+  patterns: ["*.json", "*.json.gz", "*.jsonl", "*.jsonl.gz"]
+  # O PostgreSQL escreve o fuso de log_timezone como abreviação ("UTC") ou deslocamento ("-03").
+  # Deslocamentos numéricos são sempre aceitos; abreviações precisam estar aqui (minutos em
+  # relação a UTC). Recomendado: log_timezone = 'UTC'.
+  zone_offsets_min: {UTC: 0, GMT: 0}
+
+events:
+  # Processos que representam acessos de clientes; os de fundo (checkpointer etc.) são ignorados.
+  client_backend_types: ["client backend", "not initialized"]
+  # Usuários administrativos fora da análise.
+  ignore_users: [postgres]
+  # Partições contam como a tabela pai (regex sobre o nome da relação).
+  partition_aliases:
+    - {pattern: "^payment_p\\d{4}_\\d{2}$", table: payment}
+  auth_failure_states: ["28P01", "28000"]   # senha inválida; papel/pg_hba inexistente
+  permission_denied_states: ["42501"]
+
+features:
+  window_minutes: 5
+  timezone: America/Sao_Paulo      # hora do dia e fim de semana são calculados no horário local
+  weekend_days: [5, 6]             # sábado e domingo (0 = segunda)
+  # Raridade da hora: suavização de Laplace sobre os 24 horários do histórico do usuário.
+  hour_smoothing: 1.0
+  # Piso do desvio robusto (1,4826 x MAD) para o z-score, evitando divisão por ~0 em usuários
+  # muito regulares.
+  robust_scale_floor: 1.0
