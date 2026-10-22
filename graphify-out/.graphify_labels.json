@@ -1,0 +1,16 @@
+{
+  "0": "ConfigError",
+  "1": "tasks.py",
+  "2": "smoke.py",
+  "3": "bench.py",
+  "4": "provision.py",
+  "5": "test_logtail.py",
+  "6": "Decisões técnicas do SACLA",
+  "7": "profiles.py",
+  "8": "pathlib",
+  "9": "00-include-sacla-conf.sh",
+  "10": "sacla/__init__.py",
+  "11": "simlab/__init__.py",
+  "12": "sacla",
+  "13": "bench_auto_explain__n1000x5_seed20260302.md"
+}
