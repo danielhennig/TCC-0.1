@@ -1,0 +1,6 @@
+condicao,descricao,comandos,latencia_mediana_us,latencia_p95_us,latencia_media_us,overhead_mediana_pct,bytes_log_por_comando
+sem_log,sem registro de comandos e sem auto_explain,5000,790.3,2235.6,900.7,0.0,0.5
+log_comandos,"duração e texto de cada comando, sem auto_explain",5000,821.9,2266.9,933.0,4.0,539.2
+sacla,configuração adotada (comandos + auto_explain com log_timing=off),5000,865.2,2995.4,1076.4,9.5,10079.0
+auto_explain_timing_on,comandos + auto_explain com log_timing=on,5000,919.9,3142.5,1142.7,16.4,11348.6
+auto_explain_texto,"como 'sacla', mas com o plano em formato texto (alternativa mais compacta)",5000,842.4,2640.7,1005.3,6.6,3767.1

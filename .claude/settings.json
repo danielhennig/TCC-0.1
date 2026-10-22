@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose *)",
+      "Bash(docker info *)",
+      "Bash(docker image inspect *)",
+      "Bash(docker buildx imagetools inspect *)",
+      "Bash(python tasks.py *)",
+      "Bash(python -m pytest *)",
+      "Bash(pytest *)",
+      "Bash(ruff *)",
+      "Bash(mypy *)",
+      "PowerShell(docker compose *)",
+      "PowerShell(python tasks.py *)",
+      "PowerShell(python -m pytest *)"
+    ]
+  }
+}

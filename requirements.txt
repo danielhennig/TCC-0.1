@@ -1,0 +1,10 @@
+# Dependências diretas de execução (versões fixadas).
+# Lista completa e transitiva: requirements.lock (gerado com `python tasks.py lock`).
+numpy==2.5.4
+pandas==3.0.6
+pyarrow==26.0.0
+scikit-learn==1.9.1
+PyYAML==6.0.3
+psycopg[binary]==3.3.6
+matplotlib==3.11.2
+Jinja2==3.1.6

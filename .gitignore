@@ -1,0 +1,22 @@
+# Dados gerados pela simulação (grandes; reproduzíveis com `python tasks.py simulate`)
+data/
+
+# Segredos do laboratório
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Claude Code (configuração local pessoal)
+.claude/settings.local.json
+
+# Editores / SO
+.idea/
+.DS_Store
+Thumbs.db

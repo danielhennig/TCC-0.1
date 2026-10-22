@@ -1,0 +1,229 @@
+{
+  "steps": {
+    "consulta_normal": {
+      "name": "consulta_normal",
+      "description": "SELECT de um cliente pela chave",
+      "user": "atendente_01",
+      "network": "lan",
+      "client_ip": "172.30.10.50",
+      "application_name": "smoke:consulta_normal",
+      "expected": [
+        "ok"
+      ],
+      "outcome": "ok",
+      "backend_pid": 110,
+      "client_rows": 1,
+      "error": null,
+      "pids": [
+        110
+      ]
+    },
+    "leitura_grande": {
+      "name": "leitura_grande",
+      "description": "SELECT de todas as locações",
+      "user": "atendente_01",
+      "network": "lan",
+      "client_ip": "172.30.10.50",
+      "application_name": "smoke:leitura_grande",
+      "expected": [
+        "ok"
+      ],
+      "outcome": "ok",
+      "backend_pid": 111,
+      "client_rows": 51805,
+      "error": null,
+      "pids": [
+        111
+      ]
+    },
+    "update": {
+      "name": "update",
+      "description": "UPDATE de um filme, saindo pela rede externa",
+      "user": "gerente_01",
+      "network": "externa",
+      "client_ip": "172.30.30.50",
+      "application_name": "smoke:update",
+      "expected": [
+        "ok"
+      ],
+      "outcome": "ok",
+      "backend_pid": 112,
+      "client_rows": 1,
+      "error": null,
+      "pids": [
+        112
+      ]
+    },
+    "sem_permissao": {
+      "name": "sem_permissao",
+      "description": "SELECT em staff sem GRANT",
+      "user": "atendente_01",
+      "network": "lan",
+      "client_ip": "172.30.10.50",
+      "application_name": "smoke:sem_permissao",
+      "expected": [
+        "42501"
+      ],
+      "outcome": "42501",
+      "backend_pid": 113,
+      "client_rows": null,
+      "error": "permission denied for table staff",
+      "pids": [
+        113
+      ]
+    },
+    "erro_sintaxe": {
+      "name": "erro_sintaxe",
+      "description": "comando com erro de sintaxe",
+      "user": "atendente_01",
+      "network": "lan",
+      "client_ip": "172.30.10.50",
+      "application_name": "smoke:erro_sintaxe",
+      "expected": [
+        "42601"
+      ],
+      "outcome": "42601",
+      "backend_pid": 114,
+      "client_rows": null,
+      "error": "syntax error at or near \"SELEC\"",
+      "pids": [
+        114
+      ]
+    },
+    "transacao_app": {
+      "name": "transacao_app",
+      "description": "BEGIN; INSERT rental; INSERT payment; COMMIT",
+      "user": "svc_locadora",
+      "network": "app",
+      "client_ip": "172.30.20.50",
+      "application_name": "smoke:transacao_app",
+      "expected": [
+        "ok"
+      ],
+      "outcome": "ok",
+      "backend_pid": 115,
+      "client_rows": 2,
+      "error": null,
+      "pids": [
+        115
+      ]
+    },
+    "protocolo_estendido": {
+      "name": "protocolo_estendido",
+      "description": "SELECT com parâmetro pelo protocolo estendido",
+      "user": "svc_locadora",
+      "network": "app",
+      "client_ip": "172.30.20.50",
+      "application_name": "smoke:protocolo_estendido",
+      "expected": [
+        "ok"
+      ],
+      "outcome": "ok",
+      "backend_pid": 116,
+      "client_rows": 1,
+      "error": null,
+      "pids": [
+        116
+      ]
+    },
+    "falha_auth": {
+      "name": "falha_auth",
+      "description": "login com senha errada",
+      "user": "atendente_01",
+      "network": "externa",
+      "client_ip": "172.30.30.50",
+      "application_name": "smoke:falha_auth",
+      "expected": [
+        "28P01",
+        "falha_conexao"
+      ],
+      "outcome": "falha_conexao",
+      "backend_pid": null,
+      "client_rows": null,
+      "error": "connection failed: connection to server at \"172.30.30.10\", port 5432 failed: FATAL:  password authentication failed for user \"atendente_01\"",
+      "pids": [
+        117
+      ]
+    }
+  },
+  "checks": [
+    {
+      "name": "resultados_no_cliente",
+      "description": "cada passo terminou com o resultado esperado no cliente",
+      "passed": true,
+      "observed": "consulta_normal=ok, leitura_grande=ok, update=ok, sem_permissao=42501, erro_sintaxe=42601, transacao_app=ok, protocolo_estendido=ok, falha_auth=falha_conexao"
+    },
+    {
+      "name": "falha_auth_com_usuario",
+      "description": "a linha FATAL 28P01 traz o campo user com o usuário atacado",
+      "passed": true,
+      "observed": "user='atendente_01'"
+    },
+    {
+      "name": "falha_auth_application_name",
+      "description": "presença de application_name na linha FATAL 28P01 (informativo)",
+      "passed": null,
+      "observed": "application_name='ausente'"
+    },
+    {
+      "name": "uma_linha_por_comando",
+      "description": "protocolo simples: uma única linha 'duration ... statement' por comando",
+      "passed": true,
+      "observed": "1 linha(s) de duração com texto"
+    },
+    {
+      "name": "plano_antes_da_duracao",
+      "description": "na mesma sessão, a linha do auto_explain vem antes da linha de duração",
+      "passed": true,
+      "observed": "plano line_num=4, duração line_num=5"
+    },
+    {
+      "name": "linhas_retornadas_auto_explain",
+      "description": "Actual Rows do nó raiz = linhas recebidas pelo cliente",
+      "passed": true,
+      "observed": "auto_explain=51805, cliente=51805"
+    },
+    {
+      "name": "linhas_afetadas_update",
+      "description": "Actual Rows do filho do ModifyTable = linhas afetadas no cliente",
+      "passed": true,
+      "observed": "auto_explain=1, cliente=1"
+    },
+    {
+      "name": "erro_permissao_42501",
+      "description": "ERROR 42501 com o comando no campo statement e a tabela na mensagem",
+      "passed": true,
+      "observed": "permission denied for table staff"
+    },
+    {
+      "name": "erro_sintaxe_42601",
+      "description": "ERROR 42601 com o comando no campo statement",
+      "passed": true,
+      "observed": "statement='SELEC 1'"
+    },
+    {
+      "name": "protocolo_estendido_em_3_linhas",
+      "description": "protocolo estendido gera linhas separadas de parse, bind e execute",
+      "passed": true,
+      "observed": "fases encontradas: ['parse', 'bind', 'execute']"
+    },
+    {
+      "name": "transacao_begin_commit",
+      "description": "BEGIN e COMMIT aparecem como comandos próprios",
+      "passed": true,
+      "observed": "BEGIN | INSERT INTO rental (rental_date, invento | INSERT INTO payment (customer_id, staff_ | COMMIT"
+    },
+    {
+      "name": "remote_host_por_rede",
+      "description": "remote_host de cada linha = IP do cliente na rede escolhida",
+      "passed": true,
+      "observed": "todas as linhas conferem"
+    },
+    {
+      "name": "query_id_nas_linhas_de_duracao",
+      "description": "linhas de duração com query_id preenchido (informativo)",
+      "passed": null,
+      "observed": "10 de 10"
+    }
+  ]
+}

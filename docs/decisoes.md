@@ -1,0 +1,165 @@
+# Decisões técnicas do SACLA
+
+Registro das decisões de projeto, com a fonte na documentação oficial e, quando houver,
+a evidência empírica obtida no próprio ambiente. Atualizado ao fim de cada fase.
+
+Evidências da Fase 1: `python tasks.py smoke` (linhas reais em
+`tests/fixtures/jsonlog_smoke.jsonl` e verificações em `results/ambiente/smoke_checks.json`)
+e `python tasks.py bench` (`results/ambiente/bench_auto_explain__n1000x5_seed20260302.*`).
+
+## 1. Banco de dados e base de exemplo
+
+**D1 — PostgreSQL 18.6 com pgvector 0.8.7** (`pgvector/pgvector:0.8.7-pg18-bookworm`, fixado
+por digest). A proposta falava em "PostgreSQL ≥ 15", mas o schema atual do Pagila usa
+`uuidv7()` e colunas geradas `VIRTUAL` (PG 18+) e executa `CREATE EXTENSION vector`, que não
+vem na imagem oficial do PostgreSQL. A imagem do pgvector é a oficial do PostgreSQL com a
+extensão compilada e inclui os módulos contrib (`auto_explain`).
+
+**D2 — Pagila fixado no commit `ce6e1142`** (o repositório não publica tags), com SHA-256 dos
+dois arquivos SQL conferidos no build (`ADD --checksum`). As contagens de 15 tabelas são
+validadas a cada `setup` (ex.: rental 51.805, payment 51.061, customer 999, staff 1.500).
+
+**D3 — Partições de `payment` até 2027-12.** O Pagila traz partições mensais até 2026-07; um
+`INSERT` com `payment_date = now()` falharia sem elas. Criadas pelo provisionamento.
+
+**D4 — `REVOKE CREATE ON SCHEMA public FROM PUBLIC`.** O dump do Pagila concede `ALL` no
+schema a `PUBLIC`; os usuários simulados não devem criar objetos.
+
+## 2. Configuração dos logs (`docker/postgres/sacla.conf`)
+
+Fonte: [Error Reporting and Logging](https://www.postgresql.org/docs/18/runtime-config-logging.html).
+
+**D5 — `log_destination='jsonlog'` com `logging_collector=on`.** O jsonlog exige o coletor
+("logging_collector must be enabled to generate JSON-format log output"). O coletor também
+cria um arquivo `.log` (stderr), quase vazio; o SACLA lê apenas `*.json`.
+
+**D6 — `log_statement='none'` + `log_min_duration_statement=0`.** A proposta previa
+`log_statement='all'` junto com a duração, "para que a duração saia junto com o comando". A
+documentação diz o contrário: "the text of statements that are logged because of
+log_statement will not be repeated in the duration log message". Sem `log_statement`,
+cada comando concluído gera **uma** linha `duration: X ms  statement: <texto>`.
+*Evidência:* verificação `uma_linha_por_comando`.
+
+**D7 — `log_min_error_statement='error'` (padrão).** Comandos que falham aparecem na linha
+`ERROR` no campo `statement`, inclusive erros de sintaxe, que nem o `log_statement='all'`
+registraria. *Evidência:* `erro_permissao_42501` (`statement` = o SELECT em `staff`) e
+`erro_sintaxe_42601` (`statement` = `SELEC 1`).
+
+**D8 — Protocolo simples nos simuladores (`psycopg.ClientCursor`).** "For clients using
+extended query protocol, durations of the Parse, Bind, and Execute steps are logged
+independently." A [documentação do psycopg](https://www.psycopg.org/psycopg3/docs/advanced/cursors.html)
+garante o protocolo simples com `ClientCursor`. O parser do SACLA também aceitará o formato
+estendido, contando só a linha `execute`.
+*Evidência:* `protocolo_estendido_em_3_linhas` — linhas `parse <unnamed>`, `bind <unnamed>` e
+`execute <unnamed>` separadas, com os parâmetros no campo `detail`.
+
+**D9 — `log_connections='receipt,authentication,authorization'`, `log_disconnections=on`.**
+No PG 18 o parâmetro virou uma lista ("on" equivale a esses três). Falhas de autenticação são
+registradas sempre.
+
+**D10 — `log_timezone='UTC'`.** Os horários de expediente são aplicados na agregação, com o
+fuso configurado (America/Sao_Paulo).
+
+**D11 — `compute_query_id=on`.** Preenche `query_id`. *Evidência:* 10 de 10 linhas de duração
+com `query_id` preenchido.
+
+### Fatos do formato observados no ambiente (importantes para o parser — Fase 3)
+
+| Linha | Observação |
+|---|---|
+| `connection received` | sem `user`, `backend_type="not initialized"`; o usuário só aparece nas linhas seguintes da mesma `session_id` |
+| `connection authenticated` / `authorized` | com `user`; `authorized` traz o `application_name` na mensagem |
+| `FATAL 28P01` (senha errada) | **traz `user`** (o usuário atacado) e `remote_host`; **não traz `application_name`**; `detail` indica a linha do `pg_hba.conf` |
+| `ERROR 42501` | mensagem `permission denied for table <tabela>`; comando no campo `statement`; `query_id` preenchido |
+| `ERROR 42601` | comando no campo `statement`; `query_id = 0` |
+| plano do `auto_explain` | protocolo **simples**: vem **antes** da linha de duração (mesma sessão). Protocolo **estendido**: vem **depois** da linha `execute` |
+| `BEGIN` / `COMMIT` | linhas de duração próprias, sem plano |
+| `timestamp` | precisão de milissegundos; `session_start` com precisão de segundos |
+
+## 3. Linhas retornadas e afetadas (item 2 da proposta)
+
+Fonte: [auto_explain](https://www.postgresql.org/docs/18/auto-explain.html).
+
+**D12 — `auto_explain` com `log_analyze=on` e `log_timing=off`, formato JSON.** O log padrão
+não informa quantas linhas um comando retornou. Com `log_analyze`, o plano registrado traz a
+contagem real de linhas de cada nó; `log_timing=off` evita cronometrar cada nó ("it may be
+useful to set this parameter to off when only actual row counts, and not exact times, are
+needed"). Regras de extração:
+
+- **linhas retornadas** = `Actual Rows` do nó raiz;
+- **linhas afetadas** (INSERT/UPDATE/DELETE sem `RETURNING`) = `Actual Rows` do filho do
+  `ModifyTable` (a raiz mostra 0);
+- **tabelas acessadas** = todos os `Relation Name` do plano.
+
+*Evidência:* `linhas_retornadas_auto_explain` (51.805 no plano = 51.805 no cliente) e
+`linhas_afetadas_update` (1 = 1). No `INSERT` em `payment` sem `RETURNING`, a raiz
+`ModifyTable` mostrou `Actual Rows = 0`, como esperado.
+
+**Overhead medido** (`python tasks.py bench`: 5 repetições × 1.000 comandos por condição, mesma
+carga em ordem rotativa, latência medida no cliente):
+
+| Condição | Mediana (µs) | p95 (µs) | Overhead da mediana | Bytes de log/comando |
+|---|---:|---:|---:|---:|
+| sem registro de comandos | 790,3 | 2.235,6 | — | 0,5 |
+| só comandos (`log_min_duration_statement=0`) | 821,9 | 2.266,9 | +4,0% | 539,2 |
+| **SACLA** (comandos + auto_explain JSON, `log_timing=off`) | 865,2 | 2.995,4 | **+9,5%** | 10.079,0 |
+| auto_explain JSON com `log_timing=on` | 919,9 | 3.142,5 | +16,4% | 11.348,6 |
+| auto_explain em texto, `log_timing=off` | 842,4 | 2.640,7 | +6,6% | 3.767,1 |
+
+Duas execuções anteriores (com uma versão preliminar da carga) deram, na mesma ordem,
++1,5% / +9,7% / +14,5% (sem a condição em texto) e +3,9% / +11,6% / +21,0% / +8,9%. A variação
+entre execuções é de alguns pontos percentuais; os valores devem ser lidos como ordem de
+grandeza. Os bytes de log por comando são estáveis entre execuções.
+
+**Por que JSON e não texto:** o texto gera 2,7× menos log e um overhead da mesma ordem, dentro
+da variação entre execuções. Mas o JSON entrega `Relation Name` e `Actual Rows` como campos tipados. No texto, as
+tabelas teriam de ser extraídas por expressões regulares que dependem do tipo de nó
+(`Seq Scan on`, `Index Scan using … on`, `Update on`, `CTE Scan on`…), o que é frágil. O
+volume maior (~2 GB brutos estimados para a simulação completa) é contornado comprimindo os
+logs com gzip na coleta.
+
+**Limitações:** (i) overhead de ~10% na latência mediana e ~10 KB de log por comando, o que
+desaconselha usar a configuração em produção sem avaliação; (ii) comandos que falham não
+geram plano, então ficam sem contagem de linhas; (iii) comandos utilitários (DDL, `BEGIN`)
+não passam pelo executor e também não têm plano.
+
+## 4. Horário dos acessos (item 3 da proposta)
+
+**D13 — Agenda simulada + execução sequencial acelerada + remapeamento exato (`retime`).**
+Implementação na Fase 2. A agenda é gerada em tempo simulado (4 semanas), executada o mais
+rápido possível e depois cada linha de log recebe o horário simulado do seu evento. A ligação
+é feita por um comentário opaco `/* simlab:e=<id> */` nos comandos, que o `retime` remove;
+pelo `session_id` nas linhas de conexão; e pela ordem de execução nas falhas de login. A
+Fase 1 confirmou dois fatos necessários: a linha `FATAL 28P01` não traz `application_name`, o
+que impede usá-lo como marcador; e cada sessão tem `session_id` e `line_num` próprios.
+**Limitação metodológica:** os horários são sintéticos e a execução é sequencial, sem
+concorrência real. As durações são reais, mas medidas sem contenção.
+
+## 5. Ambiente
+
+**D14 — Três redes Docker** (`rede_lan` 172.30.10.0/24, `rede_app` 172.30.20.0/24,
+`rede_externa` 172.30.30.0/24). O container `sacla` está nas três; a rede usada depende do
+nome do banco na conexão (`db-lan`, `db-app`, `db-externa`). *Evidência:*
+`remote_host_por_rede` — 172.30.10.50, 172.30.20.50 e 172.30.30.50 conforme a rede.
+
+**D15 — Healthcheck sem conexão.** O healthcheck verifica a porta 5432 em LISTEN em
+`/proc/net/tcp`. Um `pg_isready` periódico apareceria nos logs analisados. Durante o initdb o
+servidor temporário não escuta TCP, então "healthy" significa carga concluída.
+*Evidência:* nenhuma conexão de healthcheck no log.
+
+**D16 — Carga do Pagila fora do log.** A configuração do SACLA é incluída no
+`postgresql.conf` por um script do initdb, depois que o servidor temporário já subiu.
+*Evidência:* a primeira linha do jsonlog é a inicialização definitiva do servidor.
+
+**D17 — Sessão administrativa silenciosa.** O provisionamento e o benchmark desligam o
+registro de comandos na própria sessão (`SET log_min_duration_statement = -1` etc.), porque
+enviam senhas e não fazem parte do comportamento estudado. *Evidência:* o usuário `postgres`
+só aparece em linhas de conexão e desconexão, e nenhuma linha contém senha.
+
+**D18 — `sslmode=disable` e `gssencmode=disable` nos clientes.** O servidor do laboratório não
+usa TLS; sem isso o libpq poderia fazer duas tentativas de conexão por login, o que dobraria
+as linhas de falha de autenticação.
+
+**D19 — Python em container** (`python:3.13.17-slim-bookworm`, fixado por digest, dependências
+em `requirements.txt` e `requirements.lock`) e orquestração por `tasks.py`, porque o Windows
+não tem `make`.

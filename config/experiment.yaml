@@ -1,0 +1,89 @@
+# Configuração do experimento SACLA.
+# Fase 1: ambiente (lab) e benchmark do auto_explain. As fases seguintes acrescentam
+# período simulado, divisão temporal e sementes.
+
+lab:
+  database: pagila
+  port: 5432
+  admin_user: postgres
+  # Variáveis de ambiente (arquivo .env) com as senhas do laboratório.
+  admin_password_env: POSTGRES_PASSWORD
+  sim_password_env: SACLA_SIM_PASSWORD
+  # Origem das conexões: nome do banco em cada rede Docker e IP do container `sacla` nela
+  # (ver docker-compose.yml). O IP aparece como remote_host nos logs.
+  networks:
+    lan: {host: db-lan, client_ip: 172.30.10.50}
+    app: {host: db-app, client_ip: 172.30.20.50}
+    externa: {host: db-externa, client_ip: 172.30.30.50}
+  admin_network: lan
+  log_dir: /logs                  # volume pglogs montado no container `sacla`
+  log_glob: "*.json"
+  log_flush_timeout_s: 10         # espera máxima até o coletor gravar as linhas
+  connect_options:
+    sslmode: disable              # evita uma segunda tentativa de conexão (SSL/GSS) por login
+    gssencmode: disable
+    connect_timeout: "10"
+  # O Pagila traz partições mensais de payment até 2026-07; criamos as seguintes até:
+  payment_partitions_until: "2027-12"
+  # Contagens após a carga do Pagila no commit fixado em docker/postgres/Dockerfile.
+  pagila_expected_counts:
+    actor: 200
+    address: 1003
+    category: 16
+    city: 600
+    country: 109
+    customer: 999
+    film: 1000
+    film_actor: 5462
+    film_category: 2367
+    inventory: 4581
+    language: 6
+    payment: 51061
+    rental: 51805
+    staff: 1500
+    store: 500
+
+# Teste de fumaça da Fase 1 (simlab/smoke.py): gera eventos conhecidos e confere o jsonlog.
+smoke:
+  wrong_password: senha-errada-proposital
+  payment_amount: "2.99"
+  ids:                            # linhas do Pagila usadas pelos passos
+    customer_id: 42
+    film_id_update: 1
+    film_id_extended: 7
+    inventory_id: 1
+    staff_id: 1
+  fixture_path: tests/fixtures/jsonlog_smoke.jsonl
+  steps_path: tests/fixtures/jsonlog_smoke_steps.json
+  report_path: results/ambiente/smoke_checks.json
+
+# Medição do overhead do registro de comandos e do auto_explain (simlab/bench.py).
+bench:
+  user: gerente_01
+  network: lan
+  seed: 20260302
+  warmup_statements: 300
+  repetitions: 5                  # cada repetição roda um bloco por configuração, em ordem rotativa
+  statements_per_block: 1000
+  reload_grace_s: 0.5             # espera após pg_reload_conf() para os backends aplicarem
+  output_dir: results/ambiente
+  # Condições comparadas, aplicadas com ALTER SYSTEM + pg_reload_conf() e revertidas ao fim.
+  configs:
+    - name: sem_log
+      description: sem registro de comandos e sem auto_explain
+      settings: {log_min_duration_statement: "-1", auto_explain.log_min_duration: "-1"}
+    - name: log_comandos
+      description: duração e texto de cada comando, sem auto_explain
+      settings: {log_min_duration_statement: "0", auto_explain.log_min_duration: "-1"}
+    - name: sacla
+      description: configuração adotada (comandos + auto_explain com log_timing=off)
+      settings: {log_min_duration_statement: "0", auto_explain.log_min_duration: "0",
+                 auto_explain.log_timing: "off"}
+    - name: auto_explain_timing_on
+      description: comandos + auto_explain com log_timing=on
+      settings: {log_min_duration_statement: "0", auto_explain.log_min_duration: "0",
+                 auto_explain.log_timing: "on"}
+    - name: auto_explain_texto
+      description: como 'sacla', mas com o plano em formato texto (alternativa mais compacta)
+      settings: {log_min_duration_statement: "0", auto_explain.log_min_duration: "0",
+                 auto_explain.log_timing: "off", auto_explain.log_format: "text"}

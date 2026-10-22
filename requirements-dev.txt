@@ -1,0 +1,7 @@
+# Ferramentas de desenvolvimento (testes, lint, tipos).
+-r requirements.txt
+pytest==9.1.1
+ruff==0.17.1
+mypy==2.4.0
+pandas-stubs==3.0.5.260914
+types-PyYAML==6.0.12.20260906

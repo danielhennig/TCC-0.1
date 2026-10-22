@@ -1,1 +1,5 @@
 graphify-out/graph.json merge=graphify
+
+# Tudo é lido também dentro de containers Linux (scripts, configs, .env, fixtures):
+# sempre LF, mesmo com core.autocrlf=true no Windows.
+* text=auto eol=lf

@@ -1,0 +1,76 @@
+# Ambiente do SACLA: PostgreSQL + Pagila (db) e Python (sacla).
+# Use via `python tasks.py <comando>`; veja README.md.
+name: sacla
+
+services:
+  db:
+    build:
+      context: docker/postgres
+    image: sacla-db:pg18.6-pagila
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      POSTGRES_DB: pagila
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+    volumes:
+      - pgdata:/var/lib/postgresql
+      - pglogs:/var/log/postgresql/sacla
+    # O simulador escolhe a origem da conexão pelo nome do banco em cada rede,
+    # o que gera remote_host distintos nos logs (ver config/experiment.yaml).
+    networks:
+      rede_lan:
+        ipv4_address: 172.30.10.10
+        aliases: [db-lan]
+      rede_app:
+        ipv4_address: 172.30.20.10
+        aliases: [db-app]
+      rede_externa:
+        ipv4_address: 172.30.30.10
+        aliases: [db-externa]
+    shm_size: 256mb
+    # Verifica se a porta 5432 está em LISTEN sem abrir conexão (uma conexão de
+    # healthcheck apareceria nos logs analisados). Durante o initdb o servidor temporário
+    # não escuta TCP, então "healthy" significa carga do Pagila concluída. 1538 = 5432 em hex.
+    healthcheck:
+      test: ["CMD-SHELL", "grep -qE ':1538 0+:0000 0A' /proc/net/tcp /proc/net/tcp6"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 300s
+      start_interval: 2s
+
+  sacla:
+    build:
+      context: .
+      dockerfile: docker/python/Dockerfile
+    image: sacla-py:3.13.17
+    profiles: ["tools"]
+    env_file: .env
+    working_dir: /app
+    volumes:
+      - .:/app
+      - pglogs:/logs:ro
+    networks:
+      rede_lan:
+        ipv4_address: 172.30.10.50
+      rede_app:
+        ipv4_address: 172.30.20.50
+      rede_externa:
+        ipv4_address: 172.30.30.50
+    depends_on:
+      db:
+        condition: service_healthy
+
+networks:
+  rede_lan:
+    ipam:
+      config: [{subnet: 172.30.10.0/24}]
+  rede_app:
+    ipam:
+      config: [{subnet: 172.30.20.0/24}]
+  rede_externa:
+    ipam:
+      config: [{subnet: 172.30.30.0/24}]
+
+volumes:
+  pgdata:
+  pglogs:

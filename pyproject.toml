@@ -1,0 +1,35 @@
+[project]
+name = "sacla"
+version = "0.1.0"
+description = "SACLA — Sistema de Análise Comportamental de Logs de Acesso (TCC)"
+requires-python = ">=3.11"
+readme = "README.md"
+
+# O código roda com PYTHONPATH=src (container `sacla` e pytest); não há instalação de pacote.
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+packages = ["sacla", "simlab"]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ["sacla.*"]
+strict = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+markers = ["db: exige o banco em execução (docker compose)"]
+addopts = "-m 'not db'"

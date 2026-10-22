@@ -1,0 +1,76 @@
+# Perfis de acesso simulados na base Pagila.
+# Fase 1: papéis (grupos NOLOGIN), privilégios e usuários de login.
+# Fase 2 acrescenta horários, sessões, taxas e mix de consultas de cada perfil.
+#
+# `objects: ALL` concede o privilégio em todas as tabelas e views do schema public.
+
+roles:
+  atendente:
+    description: Atendente de loja (balcão de locação)
+    grants:
+      - privileges: [SELECT]
+        objects: [customer, address, city, country, film, film_category, category, language,
+                  actor, film_actor, inventory, rental, payment, store]
+      - privileges: [INSERT, UPDATE]
+        objects: [rental, customer, address]
+      - privileges: [INSERT]
+        objects: [payment]
+    sequences: [rental_rental_id_seq, payment_payment_id_seq, customer_customer_id_seq,
+                address_address_id_seq]
+
+  gerente:
+    description: Gerente de loja
+    grants:
+      - privileges: [SELECT]
+        objects: ALL
+      - privileges: [INSERT, UPDATE]
+        objects: [customer, address, staff, film]
+      - privileges: [DELETE]
+        objects: [payment]
+    sequences: [customer_customer_id_seq, address_address_id_seq, staff_staff_id_seq,
+                film_film_id_seq]
+
+  analista:
+    description: Analista de relatórios (somente leitura, sem dados pessoais)
+    grants:
+      - privileges: [SELECT]
+        objects: [film, film_category, category, language, actor, film_actor, inventory,
+                  rental, payment, store, city, country, sales_by_film_category, film_list,
+                  actor_info, rental_by_category]
+    sequences: []
+
+  servico_app:
+    description: Backend da aplicação web da locadora
+    grants:
+      - privileges: [SELECT]
+        objects: [film, film_category, category, language, actor, film_actor, inventory,
+                  store, rental, customer, address, city, country, payment]
+      - privileges: [INSERT, UPDATE]
+        objects: [rental, customer, address]
+      - privileges: [INSERT]
+        objects: [payment]
+    sequences: [rental_rental_id_seq, payment_payment_id_seq, customer_customer_id_seq,
+                address_address_id_seq]
+
+  servico_batch:
+    description: Rotina noturna de manutenção e agregação
+    grants:
+      - privileges: [SELECT]
+        objects: [rental, payment, customer, inventory, film, film_category, category]
+      - privileges: [UPDATE]
+        objects: [customer]
+      - privileges: [MAINTAIN]          # REFRESH MATERIALIZED VIEW (PG 17+)
+        objects: [rental_by_category]
+    sequences: []
+
+users:
+  - {name: atendente_01, role: atendente}
+  - {name: atendente_02, role: atendente}
+  - {name: atendente_03, role: atendente}
+  - {name: atendente_04, role: atendente}
+  - {name: gerente_01, role: gerente}
+  - {name: gerente_02, role: gerente}
+  - {name: analista_01, role: analista}
+  - {name: analista_02, role: analista}
+  - {name: svc_locadora, role: servico_app}
+  - {name: svc_batch, role: servico_batch}

@@ -1,0 +1,147 @@
+{
+  "consulta_normal": {
+    "name": "consulta_normal",
+    "description": "SELECT de um cliente pela chave",
+    "user": "atendente_01",
+    "network": "lan",
+    "client_ip": "172.30.10.50",
+    "application_name": "smoke:consulta_normal",
+    "expected": [
+      "ok"
+    ],
+    "outcome": "ok",
+    "backend_pid": 110,
+    "client_rows": 1,
+    "error": null,
+    "pids": [
+      110
+    ]
+  },
+  "leitura_grande": {
+    "name": "leitura_grande",
+    "description": "SELECT de todas as locações",
+    "user": "atendente_01",
+    "network": "lan",
+    "client_ip": "172.30.10.50",
+    "application_name": "smoke:leitura_grande",
+    "expected": [
+      "ok"
+    ],
+    "outcome": "ok",
+    "backend_pid": 111,
+    "client_rows": 51805,
+    "error": null,
+    "pids": [
+      111
+    ]
+  },
+  "update": {
+    "name": "update",
+    "description": "UPDATE de um filme, saindo pela rede externa",
+    "user": "gerente_01",
+    "network": "externa",
+    "client_ip": "172.30.30.50",
+    "application_name": "smoke:update",
+    "expected": [
+      "ok"
+    ],
+    "outcome": "ok",
+    "backend_pid": 112,
+    "client_rows": 1,
+    "error": null,
+    "pids": [
+      112
+    ]
+  },
+  "sem_permissao": {
+    "name": "sem_permissao",
+    "description": "SELECT em staff sem GRANT",
+    "user": "atendente_01",
+    "network": "lan",
+    "client_ip": "172.30.10.50",
+    "application_name": "smoke:sem_permissao",
+    "expected": [
+      "42501"
+    ],
+    "outcome": "42501",
+    "backend_pid": 113,
+    "client_rows": null,
+    "error": "permission denied for table staff",
+    "pids": [
+      113
+    ]
+  },
+  "erro_sintaxe": {
+    "name": "erro_sintaxe",
+    "description": "comando com erro de sintaxe",
+    "user": "atendente_01",
+    "network": "lan",
+    "client_ip": "172.30.10.50",
+    "application_name": "smoke:erro_sintaxe",
+    "expected": [
+      "42601"
+    ],
+    "outcome": "42601",
+    "backend_pid": 114,
+    "client_rows": null,
+    "error": "syntax error at or near \"SELEC\"",
+    "pids": [
+      114
+    ]
+  },
+  "transacao_app": {
+    "name": "transacao_app",
+    "description": "BEGIN; INSERT rental; INSERT payment; COMMIT",
+    "user": "svc_locadora",
+    "network": "app",
+    "client_ip": "172.30.20.50",
+    "application_name": "smoke:transacao_app",
+    "expected": [
+      "ok"
+    ],
+    "outcome": "ok",
+    "backend_pid": 115,
+    "client_rows": 2,
+    "error": null,
+    "pids": [
+      115
+    ]
+  },
+  "protocolo_estendido": {
+    "name": "protocolo_estendido",
+    "description": "SELECT com parâmetro pelo protocolo estendido",
+    "user": "svc_locadora",
+    "network": "app",
+    "client_ip": "172.30.20.50",
+    "application_name": "smoke:protocolo_estendido",
+    "expected": [
+      "ok"
+    ],
+    "outcome": "ok",
+    "backend_pid": 116,
+    "client_rows": 1,
+    "error": null,
+    "pids": [
+      116
+    ]
+  },
+  "falha_auth": {
+    "name": "falha_auth",
+    "description": "login com senha errada",
+    "user": "atendente_01",
+    "network": "externa",
+    "client_ip": "172.30.30.50",
+    "application_name": "smoke:falha_auth",
+    "expected": [
+      "28P01",
+      "falha_conexao"
+    ],
+    "outcome": "falha_conexao",
+    "backend_pid": null,
+    "client_rows": null,
+    "error": "connection failed: connection to server at \"172.30.30.10\", port 5432 failed: FATAL:  password authentication failed for user \"atendente_01\"",
+    "pids": [
+      117
+    ]
+  }
+}
