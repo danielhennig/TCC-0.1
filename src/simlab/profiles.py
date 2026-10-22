@@ -31,6 +31,7 @@ class Role:
 class User:
     name: str
     role: str
+    shift: str | None = None
 
 
 @dataclass(frozen=True)
@@ -55,7 +56,14 @@ def load_profiles(path: Path | None = None) -> Profiles:
     raw = load_yaml(path or CONFIG_DIR / "profiles.yaml")
     try:
         roles = {name: _parse_role(name, spec) for name, spec in raw["roles"].items()}
-        users = tuple(User(name=str(u["name"]), role=str(u["role"])) for u in raw["users"])
+        users = tuple(
+            User(
+                name=str(u["name"]),
+                role=str(u["role"]),
+                shift=str(u["shift"]) if u.get("shift") is not None else None,
+            )
+            for u in raw["users"]
+        )
     except (KeyError, TypeError, AttributeError) as exc:
         raise ConfigError(f"profiles.yaml malformado: {exc!r}") from exc
     for user in users:

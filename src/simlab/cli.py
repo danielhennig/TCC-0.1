@@ -10,10 +10,15 @@ from typing import Any
 import psycopg
 
 from sacla.config import ConfigError, setup_logging
+from simlab.anomalies import PlacementError
 from simlab.bench import BenchSettings, run_bench
+from simlab.executor import ExecutionError
 from simlab.lab import load_experiment, load_lab
 from simlab.profiles import load_profiles
 from simlab.provision import ProvisionError, provision
+from simlab.retime import RetimeError, retime_run
+from simlab.schedule import SimulationSettings
+from simlab.simulate import run_simulation
 from simlab.smoke import SmokeSettings, run_smoke
 
 log = logging.getLogger("simlab")
@@ -30,6 +35,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     sub.add_parser("smoke", help="gera eventos conhecidos e confere o jsonlog")
     sub.add_parser("bench", help="mede o overhead do registro de comandos e do auto_explain")
+    for name, help_text in (
+        ("simulate", "gera a agenda, executa, coleta os logs e remapeia os horários"),
+        ("retime", "refaz só o remapeamento de horários de uma execução existente"),
+    ):
+        p_sim = sub.add_parser(name, help=help_text)
+        p_sim.add_argument("--seed", type=int, help="semente (padrão: experiment.yaml)")
+        p_sim.add_argument("--days", type=int, help="dias simulados (padrão: experiment.yaml)")
     args = parser.parse_args(argv)
     setup_logging()
 
@@ -45,9 +57,20 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "bench":
             run_bench(lab, BenchSettings.from_mapping(_section(experiment, "bench")))
             return 0
-    except (ConfigError, ProvisionError) as exc:
+        if args.command in ("simulate", "retime"):
+            settings = SimulationSettings.from_experiment(experiment, args.seed, args.days)
+            if args.command == "simulate":
+                run_simulation(lab, load_profiles(), settings)
+            else:
+                report = retime_run(settings.run_dir, settings.retime_reorder_window)
+                log.info("retime concluído: %d linhas", report["lines"])
+            return 0
+    except (ConfigError, ProvisionError, PlacementError, RetimeError) as exc:
         log.error("%s", exc)
         return 2
+    except ExecutionError as exc:
+        log.error("execução interrompida: %s", exc)
+        return 4
     except psycopg.Error as exc:
         log.error("erro do PostgreSQL: %s", exc)
         return 3

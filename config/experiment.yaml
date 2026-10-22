@@ -43,6 +43,34 @@ lab:
     staff: 1500
     store: 500
 
+# Simulação (Fase 2). A agenda é gerada em tempo simulado e executada o mais rápido possível;
+# depois o `retime` atribui a cada linha de log o horário simulado do seu evento.
+simulation:
+  seed: 42
+  start_date: "2026-03-02"        # segunda-feira, 00:00 no fuso abaixo
+  days: 28
+  nominal_days: 28                # base das quantidades de config/anomalies.yaml
+  timezone: America/Sao_Paulo
+  data_dir: data/runs
+  results_dir: results/simulacao      # cópia versionada do manifesto e dos relatórios
+  run_id: "sim-s{seed}-{days}d"
+  wrong_password: senha-errada-simulada
+  progress_every: 10000           # eventos entre mensagens de progresso do executor
+  # O executor é sequencial: um comando bloqueado por lock de outra sessão simulada travaria
+  # a execução. Com o timeout, ele falha (55P03) e aparece como erro inesperado no relatório.
+  lock_timeout_ms: 5000
+  # Erros que a simulação provoca de propósito (sem permissão e erro de digitação).
+  expected_sqlstates: ["42501", "42601"]
+  # Linhas mantidas em memória para reordenar o log remapeado (linhas assíncronas, como a
+  # desconexão, podem ser gravadas depois de eventos posteriores).
+  retime_reorder_window: 20000
+
+# Divisão temporal (frações do período simulado, em ordem).
+split:
+  train: 0.50
+  validation: 0.25
+  test: 0.25
+
 # Teste de fumaça da Fase 1 (simlab/smoke.py): gera eventos conhecidos e confere o jsonlog.
 smoke:
   wrong_password: senha-errada-proposital

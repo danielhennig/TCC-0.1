@@ -23,9 +23,15 @@ O SACLA *auxilia* a identificação; nunca classifica algo como ataque.
   pt-BR. Tipado (mypy; strict em `sacla`), formatado com ruff (linha de 100).
 
 ## Comandos (Windows sem make: usar `python tasks.py`)
-`setup` (recria tudo do zero) · `reset` · `smoke` · `bench` · `test` · `lint` · `fmt` · `lock`
-· `psql` · `shell`. Tudo roda nos containers do `docker-compose.yml`; o Docker Desktop precisa
-estar ligado.
+`setup` (recria tudo do zero) · `reset` · `smoke` · `bench` · `simulate [--days N --seed S]`
+(recria banco e logs e roda a simulação) · `retime` · `test` · `lint` · `fmt` · `lock` · `psql`
+· `shell`. Tudo roda nos containers do `docker-compose.yml`; o Docker Desktop precisa estar
+ligado. Não rode outro comando de container enquanto um `simulate` estiver recriando o banco.
+
+## Simulação (Fase 2)
+Saídas em `data/runs/<run_id>/`; o SACLA lê só `retimed/`. Rótulos ficam só em
+`manifest.csv` (nunca em `events.parquet`). Configuração: `config/profiles.yaml`
+(comportamentos, ruído), `config/queries.yaml` (SQL), `config/anomalies.yaml`.
 
 ## Ambiente
 Host Windows 11 + Docker Desktop. Logs ficam no volume `pglogs` (montado em `/logs` no

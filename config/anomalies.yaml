@@ -1,0 +1,95 @@
+# Anomalias injetadas na simulação. Cada cenário vira uma linha do manifesto de ground truth
+# (usuário, início, fim, tipo, intensidade, split); os rótulos da avaliação vêm SÓ do manifesto.
+#
+# when: active    dentro de uma sessão normal do usuário (reaproveita a conexão aberta)
+#       off_hours horário em que o usuário nunca trabalha (nova sessão)
+#       any       qualquer horário (falha de autenticação não precisa de sessão)
+# Intervalos [a, b] são sorteados uniformemente; durações em minutos.
+
+# Quantidades para o período nominal (simulation.nominal_days); execuções mais curtas são
+# escaladas proporcionalmente, com pelo menos 1 cenário por célula configurada.
+counts:
+  train: {total: 20}          # contaminação baixa, com tipo e intensidade sorteados
+  validation: {per_cell: 5}   # por tipo × intensidade
+  test: {per_cell: 8}
+
+min_gap_min: 30               # distância mínima entre cenários do mesmo usuário
+max_placement_attempts: 500
+host_margin_min: 2            # distância mínima do início/fim da sessão hospedeira
+single_action_window_min: 2   # janela reservada para anomalias de uma ação só
+
+types:
+  rajada:
+    description: muitas consultas em pouco tempo
+    roles: [atendente, gerente, analista, servico_app]
+    when: active
+    intensities:
+      baixa: {rate_multiplier: 3, duration_min: [3, 8]}
+      media: {rate_multiplier: 8, duration_min: [3, 8]}
+      alta: {rate_multiplier: 20, duration_min: [3, 8]}
+
+  fora_horario:
+    description: acesso fora do horário habitual do usuário
+    roles: [atendente, gerente, analista]
+    when: off_hours
+    origins: {lan: 0.4, externa: 0.6}
+    intensities:
+      baixa: {statements: 5, duration_min: [5, 15]}
+      media: {statements: 20, duration_min: [10, 30]}
+      alta: {statements: 60, duration_min: [20, 45]}
+
+  volume_alto:
+    description: leitura de grande quantidade de registros
+    roles: [atendente, gerente, analista, servico_app]
+    when: active
+    intensities:
+      baixa: {action: leitura_volume_baixa}
+      media: {action: leitura_volume_media}
+      alta: {action: leitura_volume_alta}
+
+  sem_permissao:
+    description: tentativas em tabelas sem permissão (ações de forbidden_actions do papel)
+    roles: [atendente, gerente, analista, servico_app]
+    when: active
+    intensities:
+      baixa: {attempts: [1, 2], duration_min: [1, 5]}
+      media: {attempts: [5, 5], duration_min: [2, 8]}
+      alta: {attempts: [15, 15], duration_min: [3, 10]}
+
+  falha_auth:
+    description: múltiplas falhas de autenticação
+    roles: [atendente, gerente, analista, servico_app]
+    when: any
+    origins: {externa: 0.7, lan: 0.3}
+    intensities:
+      baixa: {attempts: [3, 3], duration_min: [1, 3]}
+      media: {attempts: [10, 10], duration_min: [2, 6]}
+      alta: {attempts: [40, 40], duration_min: [3, 10]}
+
+  dml_incomum:
+    description: UPDATE/DELETE permitido, mas incomum para o perfil
+    roles: [atendente, gerente, servico_app]
+    when: active
+    actions: {atendente: dml_atendente, gerente: dml_gerente, servico_app: dml_servico}
+    intensities:
+      baixa: {rows: 5}
+      media: {rows: 50}
+      alta: {rows: 500}
+
+# Tipo inédito: aparece só no teste, não é usado para escrever as regras da baseline nem para
+# ajustar o modelo. Leitura lenta e paginada de dados permitidos, em horário e ritmo normais.
+novel:
+  leitura_atipica:
+    description: leitura paginada de dados permitidos, mas atípica para o perfil
+    splits: [test]
+    count: 10
+    roles: [atendente, gerente, analista, servico_app]
+    when: active
+    actions: {atendente: pagina_clientes, gerente: pagina_staff, analista: pagina_pagamentos,
+              servico_app: pagina_emails}
+    page_size: 50               # usado como LIMIT nas consultas pagina_* (queries.yaml)
+    first_page: [0, 5]          # página inicial sorteada
+    intensities:
+      baixa: {pages: 8, interval_s: [30, 60]}
+      media: {pages: 20, interval_s: [30, 60]}
+      alta: {pages: 40, interval_s: [30, 50]}

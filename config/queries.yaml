@@ -1,0 +1,340 @@
+# Catálogo de ações da simulação: cada ação é uma sequência de comandos SQL executada junta.
+#
+# Parâmetros (sorteados na geração da agenda, com a semente da simulação):
+#   {id: <pool>}             um identificador válido do pool (ver id_pools)
+#   {int: [min, max]}        inteiro uniforme
+#   {choice: [...]}          um dos valores
+#   {prefix: true}           letra maiúscula + '%', para buscas com ILIKE
+#   {month: [AAAA-MM, AAAA-MM]}  primeiro dia de um mês do intervalo ('AAAA-MM-01')
+#   {format: "...{n}...", n: [min, max]}  texto com um inteiro sorteado
+#   {context: <chave>}       valor fornecido pelo gerador (intensidade da anomalia, página)
+# Um comando com `capture: <nome>` guarda a primeira coluna da primeira linha devolvida, que os
+# comandos seguintes usam como %(<nome>)s. `transaction: true` envolve a ação em BEGIN/COMMIT.
+# Os comandos usam %(nome)s e não podem ter '%' literal (os parâmetros são embutidos no cliente).
+
+id_pools:
+  customer: [customer, customer_id]
+  film: [film, film_id]
+  inventory: [inventory, inventory_id]
+  staff: [staff, staff_id]
+  store: [store, store_id]
+  rental: [rental, rental_id]
+  payment: [payment, payment_id]
+  category: [category, category_id]
+  city: [city, city_id]
+
+actions:
+  # --- Balcão (atendente) e aplicação web ---------------------------------------------------
+  consultar_cliente:
+    params: {customer_id: {id: customer}}
+    statements:
+      - >-
+        SELECT customer_id, first_name, last_name, email, activebool
+        FROM customer WHERE customer_id = %(customer_id)s
+      - >-
+        SELECT a.address, a.district, a.postal_code, a.phone, ci.city
+        FROM customer c JOIN address a ON a.address_id = c.address_id
+        JOIN city ci ON ci.city_id = a.city_id WHERE c.customer_id = %(customer_id)s
+
+  buscar_filme:
+    params: {prefix: {prefix: true}}
+    statements:
+      - >-
+        SELECT film_id, title, rental_rate, rating FROM film
+        WHERE title ILIKE %(prefix)s ORDER BY title LIMIT 20
+
+  detalhe_filme:
+    params: {film_id: {id: film}}
+    statements:
+      - >-
+        SELECT f.film_id, f.title, f.description, f.length, f.rental_rate, c.name AS categoria
+        FROM film f JOIN film_category fc ON fc.film_id = f.film_id
+        JOIN category c ON c.category_id = fc.category_id WHERE f.film_id = %(film_id)s
+
+  verificar_estoque:
+    params: {film_id: {id: film}}
+    statements:
+      - >-
+        SELECT inventory_id, store_id FROM inventory WHERE film_id = %(film_id)s
+        ORDER BY store_id LIMIT 20
+      - >-
+        SELECT count(*) FROM rental r JOIN inventory i ON i.inventory_id = r.inventory_id
+        WHERE i.film_id = %(film_id)s AND r.return_date IS NULL
+
+  nova_locacao:
+    transaction: true
+    params:
+      inventory_id: {id: inventory}
+      customer_id: {id: customer}
+      staff_id: {id: staff}
+      amount: {choice: [0.99, 2.99, 4.99]}
+    statements:
+      - sql: >-
+          INSERT INTO rental (rental_date, inventory_id, customer_id, staff_id)
+          VALUES (now(), %(inventory_id)s, %(customer_id)s, %(staff_id)s) RETURNING rental_id
+        capture: rental_id
+      - >-
+        INSERT INTO payment (customer_id, staff_id, rental_id, amount, payment_date)
+        VALUES (%(customer_id)s, %(staff_id)s, %(rental_id)s, %(amount)s, now())
+
+  devolucao:
+    params: {rental_id: {id: rental}}
+    statements:
+      - UPDATE rental SET return_date = now() WHERE rental_id = %(rental_id)s
+
+  historico_cliente:
+    params: {customer_id: {id: customer}}
+    statements:
+      - >-
+        SELECT r.rental_id, r.rental_date, r.return_date, f.title
+        FROM rental r JOIN inventory i ON i.inventory_id = r.inventory_id
+        JOIN film f ON f.film_id = i.film_id
+        WHERE r.customer_id = %(customer_id)s ORDER BY r.rental_date DESC LIMIT 20
+
+  cadastrar_cliente:
+    transaction: true
+    params:
+      endereco: {format: "Rua Simulada {n}", n: [1, 9999]}
+      bairro: {choice: [Centro, Moinhos, Cidade Baixa, Menino Deus, Petrópolis, Partenon]}
+      city_id: {id: city}
+      cep: {format: "{n}", n: [10000000, 99999999]}
+      telefone: {format: "5551{n}", n: [10000000, 99999999]}
+      store_id: {id: store}
+      nome: {choice: [Ana, Bruno, Carla, Diego, Elisa, Fábio, Gabriela, Heitor, Isabela, João]}
+      sobrenome: {choice: [Silva, Souza, Oliveira, Pereira, Costa, Rodrigues, Almeida, Lima]}
+      email: {format: "cliente{n}@exemplo.com.br", n: [1, 999999]}
+    statements:
+      - sql: >-
+          INSERT INTO address (address, district, city_id, postal_code, phone)
+          VALUES (%(endereco)s, %(bairro)s, %(city_id)s, %(cep)s, %(telefone)s) RETURNING address_id
+        capture: address_id
+      - >-
+        INSERT INTO customer (store_id, first_name, last_name, email, address_id)
+        VALUES (%(store_id)s, %(nome)s, %(sobrenome)s, %(email)s, %(address_id)s)
+
+  catalogo_categoria:
+    params: {category_id: {id: category}}
+    statements:
+      - >-
+        SELECT f.film_id, f.title, f.rental_rate, f.rating
+        FROM film f JOIN film_category fc ON fc.film_id = f.film_id
+        WHERE fc.category_id = %(category_id)s ORDER BY f.title LIMIT 24
+
+  detalhe_filme_app:
+    params: {film_id: {id: film}}
+    statements:
+      - >-
+        SELECT film_id, title, description, length, rental_rate, rating
+        FROM film WHERE film_id = %(film_id)s
+      - >-
+        SELECT a.first_name, a.last_name FROM actor a
+        JOIN film_actor fa ON fa.actor_id = a.actor_id WHERE fa.film_id = %(film_id)s
+
+  disponibilidade:
+    params: {film_id: {id: film}, store_id: {id: store}}
+    statements:
+      - >-
+        SELECT inventory_id FROM inventory
+        WHERE film_id = %(film_id)s AND store_id = %(store_id)s
+
+  perfil_cliente:
+    params: {customer_id: {id: customer}}
+    statements:
+      - >-
+        SELECT customer_id, first_name, last_name, email, activebool, create_date
+        FROM customer WHERE customer_id = %(customer_id)s
+
+  # --- Gestão (gerente) --------------------------------------------------------------------
+  faturamento_mensal:
+    params: {since: {month: ["2025-01", "2026-06"]}}
+    statements:
+      - >-
+        SELECT date_trunc('month', payment_date) AS mes, count(*), sum(amount)
+        FROM payment WHERE payment_date >= %(since)s::date GROUP BY 1 ORDER BY 1
+
+  receita_por_loja:
+    params: {since: {month: ["2025-06", "2026-06"]}}
+    statements:
+      - >-
+        SELECT i.store_id, sum(p.amount) AS receita
+        FROM payment p JOIN rental r ON r.rental_id = p.rental_id
+        JOIN inventory i ON i.inventory_id = r.inventory_id
+        WHERE p.payment_date >= %(since)s::date
+        GROUP BY i.store_id ORDER BY receita DESC LIMIT 20
+
+  top_filmes:
+    params: {since: {month: ["2025-06", "2026-06"]}}
+    statements:
+      - >-
+        SELECT f.title, count(*) AS locacoes
+        FROM rental r JOIN inventory i ON i.inventory_id = r.inventory_id
+        JOIN film f ON f.film_id = i.film_id WHERE r.rental_date >= %(since)s::date
+        GROUP BY f.title ORDER BY locacoes DESC LIMIT 10
+
+  clientes_em_atraso:
+    params: {dias: {int: [7, 30]}}
+    statements:
+      - >-
+        SELECT c.customer_id, c.first_name, c.last_name, c.email, r.rental_date
+        FROM rental r JOIN customer c ON c.customer_id = r.customer_id
+        WHERE r.return_date IS NULL AND r.rental_date < now() - make_interval(days => %(dias)s)
+        ORDER BY r.rental_date LIMIT 50
+
+  atualizar_preco:
+    params: {film_id: {id: film}, rate: {choice: [0.99, 2.99, 4.99]}}
+    statements:
+      - UPDATE film SET rental_rate = %(rate)s WHERE film_id = %(film_id)s
+
+  inativar_cliente:
+    params: {customer_id: {id: customer}}
+    statements:
+      - UPDATE customer SET activebool = false WHERE customer_id = %(customer_id)s
+
+  estorno:
+    params: {payment_id: {id: payment}}
+    statements:
+      - DELETE FROM payment WHERE payment_id = %(payment_id)s
+
+  # --- Relatórios (analista) ---------------------------------------------------------------
+  vendas_por_categoria:
+    statements:
+      - SELECT category, total_sales FROM sales_by_film_category ORDER BY total_sales DESC
+
+  locacoes_por_mes:
+    params: {since: {month: ["2025-01", "2026-06"]}}
+    statements:
+      - >-
+        SELECT date_trunc('month', rental_date) AS mes, count(*)
+        FROM rental WHERE rental_date >= %(since)s::date GROUP BY 1 ORDER BY 1
+
+  ranking_categorias:
+    statements:
+      - SELECT category, total_sales FROM rental_by_category ORDER BY total_sales DESC
+
+  atores_populares:
+    params: {since: {month: ["2026-01", "2026-06"]}}
+    statements:
+      - >-
+        SELECT a.actor_id, a.first_name, a.last_name, count(*) AS locacoes
+        FROM actor a JOIN film_actor fa ON fa.actor_id = a.actor_id
+        JOIN inventory i ON i.film_id = fa.film_id
+        JOIN rental r ON r.inventory_id = i.inventory_id
+        WHERE r.rental_date >= %(since)s::date
+        GROUP BY a.actor_id, a.first_name, a.last_name ORDER BY locacoes DESC LIMIT 20
+
+  catalogo_filmes:
+    params:
+      categoria: {choice: [Action, Animation, Children, Classics, Comedy, Documentary, Drama,
+                           Family, Foreign, Games, Horror, Music, New, Sci-Fi, Sports, Travel]}
+    statements:
+      - >-
+        SELECT fid, title, category, price, rating FROM film_list
+        WHERE category = %(categoria)s ORDER BY title LIMIT 100
+
+  extracao_semanal:
+    params: {since: {month: ["2025-01", "2026-01"]}}
+    statements:
+      - >-
+        SELECT rental_id, rental_date, inventory_id, customer_id, return_date
+        FROM rental WHERE rental_date >= %(since)s::date ORDER BY rental_date
+
+  # --- Rotina noturna (serviço batch) ------------------------------------------------------
+  rotina_noturna:
+    params:
+      since: {month: ["2026-04", "2026-06"]}
+      faixa_inicio: {int: [1, 790]}
+    statements:
+      - >-
+        SELECT rental_id, customer_id, rental_date FROM rental
+        WHERE return_date IS NULL ORDER BY rental_date
+      - >-
+        SELECT date_trunc('day', payment_date) AS dia, count(*), sum(amount)
+        FROM payment WHERE payment_date >= %(since)s::date GROUP BY 1 ORDER BY 1
+      - >-
+        UPDATE customer SET activebool = true
+        WHERE customer_id BETWEEN %(faixa_inicio)s AND %(faixa_inicio)s + 199
+      - REFRESH MATERIALIZED VIEW rental_by_category
+      - SELECT customer_id, sum(amount) AS total FROM payment GROUP BY customer_id
+
+  # --- Ações sem privilégio (42501): ruído ocasional e anomalia sem_permissao ---------------
+  negado_staff:
+    statements:
+      - SELECT staff_id, first_name, last_name, email, username FROM staff ORDER BY staff_id LIMIT 20
+  negado_vendas_loja:
+    statements:
+      - SELECT store, manager, total_sales FROM sales_by_store
+  negado_clientes:
+    statements:
+      - SELECT customer_id, first_name, last_name, email FROM customer ORDER BY customer_id LIMIT 50
+  negado_enderecos:
+    statements:
+      - SELECT address_id, address, district, phone FROM address ORDER BY address_id LIMIT 50
+  negado_excluir_locacao:
+    params: {rental_id: {id: rental}}
+    statements:
+      - DELETE FROM rental WHERE rental_id = %(rental_id)s
+  negado_alterar_pagamento:
+    params: {payment_id: {id: payment}}
+    statements:
+      - UPDATE payment SET amount = amount WHERE payment_id = %(payment_id)s
+
+  # --- Anomalia volume_alto ---------------------------------------------------------------
+  leitura_volume_baixa:
+    statements:
+      - >-
+        SELECT rental_id, rental_date, inventory_id, customer_id, return_date
+        FROM rental ORDER BY rental_date DESC LIMIT 2000
+  leitura_volume_media:
+    statements:
+      - >-
+        SELECT rental_id, rental_date, inventory_id, customer_id, return_date
+        FROM rental ORDER BY rental_date DESC LIMIT 10000
+  leitura_volume_alta:
+    statements:
+      - SELECT * FROM rental
+      - SELECT * FROM payment
+
+  # --- Anomalia dml_incomum (privilégio existe, uso não) ------------------------------------
+  dml_atendente:
+    params: {rows: {context: rows}}
+    statements:
+      - >-
+        UPDATE rental SET return_date = now() WHERE rental_id IN
+        (SELECT rental_id FROM rental ORDER BY rental_id DESC LIMIT %(rows)s)
+  dml_gerente:
+    params: {rows: {context: rows}}
+    statements:
+      - >-
+        DELETE FROM payment WHERE payment_id IN
+        (SELECT payment_id FROM payment ORDER BY payment_id DESC LIMIT %(rows)s)
+  dml_servico:
+    params: {rows: {context: rows}}
+    statements:
+      - >-
+        UPDATE customer SET email = lower(email), activebool = false WHERE customer_id IN
+        (SELECT customer_id FROM customer ORDER BY customer_id DESC LIMIT %(rows)s)
+
+  # --- Anomalia inédita leitura_atipica (só no teste): paginação lenta e permitida ------------
+  pagina_clientes:
+    params: {offset: {context: offset}, page_size: {context: page_size}}
+    statements:
+      - >-
+        SELECT c.customer_id, c.first_name, c.last_name, c.email, a.address, a.phone
+        FROM customer c JOIN address a ON a.address_id = c.address_id
+        ORDER BY c.customer_id LIMIT %(page_size)s OFFSET %(offset)s
+  pagina_staff:
+    params: {offset: {context: offset}, page_size: {context: page_size}}
+    statements:
+      - >-
+        SELECT staff_id, first_name, last_name, email, username, password
+        FROM staff ORDER BY staff_id LIMIT %(page_size)s OFFSET %(offset)s
+  pagina_pagamentos:
+    params: {offset: {context: offset}, page_size: {context: page_size}}
+    statements:
+      - >-
+        SELECT payment_id, customer_id, amount, payment_date
+        FROM payment ORDER BY payment_id LIMIT %(page_size)s OFFSET %(offset)s
+  pagina_emails:
+    params: {offset: {context: offset}, page_size: {context: page_size}}
+    statements:
+      - SELECT customer_id, email FROM customer ORDER BY customer_id LIMIT %(page_size)s OFFSET %(offset)s

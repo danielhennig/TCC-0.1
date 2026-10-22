@@ -64,13 +64,149 @@ roles:
     sequences: []
 
 users:
-  - {name: atendente_01, role: atendente}
-  - {name: atendente_02, role: atendente}
-  - {name: atendente_03, role: atendente}
-  - {name: atendente_04, role: atendente}
-  - {name: gerente_01, role: gerente}
-  - {name: gerente_02, role: gerente}
-  - {name: analista_01, role: analista}
-  - {name: analista_02, role: analista}
+  - {name: atendente_01, role: atendente, shift: manha}
+  - {name: atendente_02, role: atendente, shift: manha}
+  - {name: atendente_03, role: atendente, shift: tarde}
+  - {name: atendente_04, role: atendente, shift: tarde}
+  - {name: gerente_01, role: gerente, shift: comercial}
+  - {name: gerente_02, role: gerente, shift: comercial}
+  - {name: analista_01, role: analista, shift: comercial}
+  - {name: analista_02, role: analista, shift: comercial}
   - {name: svc_locadora, role: servico_app}
   - {name: svc_batch, role: servico_batch}
+
+# --- Comportamento normal de cada papel (Fase 2) ------------------------------------------
+# Horários no fuso de simulation.timezone (experiment.yaml). Dias: 0 = segunda ... 6 = domingo.
+# `actions` são pesos relativos sobre as ações de config/queries.yaml.
+# kind: interactive (turnos com sessões), service (24 h, curva horária) ou batch (rotina diária).
+behaviors:
+  atendente:
+    kind: interactive
+    application_name: locadora-balcao
+    weekdays: [0, 1, 2, 3, 4, 5]
+    shifts: {manha: ["08:00", "14:00"], tarde: ["13:00", "19:00"]}
+    shift_jitter_min: 10            # desvio-padrão do início e do fim do turno
+    sessions_per_shift: [1, 3]      # reconexões ao longo do turno
+    session_gap_min: [5, 30]        # intervalo entre sessões do mesmo turno
+    actions_per_hour: 30
+    daily_rate_sigma: 0.25          # variação diária da taxa (lognormal)
+    think_time_s: [0.3, 2.0]        # entre comandos de uma mesma ação
+    networks: {lan: 1.0}
+    overtime: {probability: 0.0, extra_min: [0, 0]}
+    off_hours_margin_min: 120       # folga após o turno antes de contar como "fora do horário"
+    actions:
+      consultar_cliente: 22
+      buscar_filme: 18
+      detalhe_filme: 10
+      verificar_estoque: 14
+      nova_locacao: 15
+      devolucao: 12
+      historico_cliente: 7
+      cadastrar_cliente: 2
+
+  gerente:
+    kind: interactive
+    application_name: locadora-gestao
+    weekdays: [0, 1, 2, 3, 4]
+    shifts: {comercial: ["09:00", "18:00"]}
+    shift_jitter_min: 15
+    sessions_per_shift: [1, 3]
+    session_gap_min: [20, 70]
+    actions_per_hour: 12
+    daily_rate_sigma: 0.3
+    think_time_s: [1.0, 6.0]
+    networks: {lan: 0.9, externa: 0.1}     # home office ocasional
+    overtime: {probability: 0.15, extra_min: [30, 120]}
+    off_hours_margin_min: 120
+    actions:
+      consultar_cliente: 15
+      faturamento_mensal: 12
+      receita_por_loja: 10
+      top_filmes: 10
+      clientes_em_atraso: 10
+      atualizar_preco: 8
+      inativar_cliente: 5
+      historico_cliente: 8
+      estorno: 1
+
+  analista:
+    kind: interactive
+    application_name: locadora-bi
+    weekdays: [0, 1, 2, 3, 4]
+    shifts: {comercial: ["09:00", "18:00"]}
+    shift_jitter_min: 20
+    sessions_per_shift: [1, 2]
+    session_gap_min: [30, 90]
+    actions_per_hour: 8
+    daily_rate_sigma: 0.35
+    think_time_s: [2.0, 15.0]
+    networks: {lan: 0.8, externa: 0.2}
+    overtime: {probability: 0.05, extra_min: [30, 60]}
+    off_hours_margin_min: 120
+    actions:
+      vendas_por_categoria: 10
+      locacoes_por_mes: 12
+      receita_por_loja: 10
+      top_filmes: 12
+      ranking_categorias: 8
+      atores_populares: 6
+      catalogo_filmes: 8
+    # Extração semanal legítima, que lê milhares de linhas (ruído que se parece com volume_alto).
+    weekly:
+      - {weekday: 0, time: "10:00", jitter_min: 40, action: extracao_semanal, repeat: [2, 4],
+         spacing_min: [2, 10]}
+
+  servico_app:
+    kind: service
+    application_name: locadora-web
+    session_minutes: 60             # o pool de conexões recicla cada conexão a cada hora
+    actions_per_hour: 80
+    daily_rate_sigma: 0.15
+    think_time_s: [0.02, 0.3]
+    networks: {app: 1.0}
+    # Multiplicador por hora local (0h ... 23h): pouco movimento de madrugada, pico à noite.
+    hourly_profile: [0.15, 0.10, 0.08, 0.07, 0.07, 0.10, 0.20, 0.40, 0.60, 0.80, 0.90, 1.00,
+                     1.10, 1.00, 0.90, 0.90, 1.00, 1.20, 1.50, 1.80, 2.00, 1.80, 1.20, 0.50]
+    actions:
+      catalogo_categoria: 25
+      detalhe_filme_app: 20
+      buscar_filme: 15
+      disponibilidade: 15
+      perfil_cliente: 10
+      historico_cliente: 7
+      nova_locacao: 8
+
+  servico_batch:
+    kind: batch
+    application_name: locadora-batch
+    time: "02:00"
+    jitter_min: 5
+    think_time_s: [1.0, 20.0]
+    networks: {app: 1.0}
+    job: rotina_noturna              # leituras grandes e UPDATE em lote, legítimos, de madrugada
+    session_padding_s: 4             # folga da sessão além do tempo máximo dos comandos
+
+# Regras para dividir um turno em sessões: segmentos menores que isso são descartados.
+sessions:
+  min_session_min: 5
+  min_segment_before_gap_min: 10
+
+# Ações que o papel NÃO tem privilégio para executar (geram 42501). Usadas pelo ruído normal
+# (engano ocasional) e pela anomalia sem_permissao.
+forbidden_actions:
+  atendente: [negado_staff, negado_vendas_loja, negado_excluir_locacao]
+  gerente: [negado_excluir_locacao, negado_alterar_pagamento]
+  analista: [negado_clientes, negado_enderecos, negado_staff]
+  servico_app: [negado_staff, negado_alterar_pagamento, negado_vendas_loja]
+
+# Ruído legítimo do tráfego normal: sem ele, cada anomalia seria separável por um único
+# atributo e a avaliação seria trivial.
+noise:
+  typo_probability: 0.005           # por SELECT fora de transação, só usuários interativos
+  wrong_password_probability: 0.02  # por sessão interativa: uma tentativa errada antes de entrar
+  wrong_password_delay_s: [3, 20]   # quanto antes da conexão a tentativa errada acontece
+  permission_mistake_per_day: 0.04  # por usuário interativo e dia de trabalho
+  permission_mistakes:              # o engano usa só a primeira ação "negada" mais plausível
+    atendente: [negado_vendas_loja]
+    gerente: [negado_excluir_locacao]
+    analista: [negado_clientes]

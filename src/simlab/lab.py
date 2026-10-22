@@ -109,13 +109,16 @@ def connect(
     application_name: str,
     *,
     client_side_binding: bool = True,
+    options: str | None = None,
 ) -> psycopg.Connection[Any]:
     """Abre uma conexão em autocommit saindo pela rede indicada.
 
     Com `client_side_binding` (padrão) os parâmetros são embutidos no cliente e o comando
     vai pelo protocolo simples: uma linha de log por comando. Sem ele, o psycopg usa o
-    protocolo estendido (parse/bind/execute registrados separadamente).
+    protocolo estendido (parse/bind/execute registrados separadamente). `options` vai no
+    pacote de inicialização (ex.: "-c lock_timeout=5000") e não aparece no log.
     """
+    extra = {"options": options} if options else {}
     conninfo = make_conninfo(
         host=lab.network(network).host,
         port=lab.port,
@@ -124,6 +127,7 @@ def connect(
         password=password,
         application_name=application_name,
         **lab.connect_options,
+        **extra,
     )
     if client_side_binding:
         return psycopg.connect(conninfo, autocommit=True, cursor_factory=psycopg.ClientCursor)

@@ -68,6 +68,17 @@ def bench(extra: list[str]) -> None:
     run([*RUN, "python", "-m", "simlab.cli", "bench", *extra])
 
 
+def simulate(extra: list[str]) -> None:
+    """Recria banco e logs e roda a simulação completa (ex.: --days 2 --seed 7)."""
+    reset([])
+    run([*RUN, "python", "-m", "simlab.cli", "simulate", *extra])
+
+
+def retime(extra: list[str]) -> None:
+    """Refaz só o remapeamento de horários de uma execução (mesmos --seed/--days)."""
+    run([*RUN, "python", "-m", "simlab.cli", "retime", *extra])
+
+
 def test(extra: list[str]) -> None:
     """Roda a suíte pytest no container."""
     run([*RUN, "pytest", *extra])
@@ -108,6 +119,8 @@ TASKS: dict[str, Callable[[list[str]], None]] = {
     "down": down,
     "smoke": smoke,
     "bench": bench,
+    "simulate": simulate,
+    "retime": retime,
     "test": test,
     "lint": lint,
     "fmt": fmt,

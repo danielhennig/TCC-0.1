@@ -135,6 +135,38 @@ que impede usá-lo como marcador; e cada sessão tem `session_id` e `line_num` p
 **Limitação metodológica:** os horários são sintéticos e a execução é sequencial, sem
 concorrência real. As durações são reais, mas medidas sem contenção.
 
+**Implementação (Fase 2, `src/simlab/retime.py`).** Duas passagens sobre o log bruto:
+
+1. **Índice:** para cada linha, `session_id`, PID, horário real e a marca, se houver. Cada
+   sessão do log é ligada a uma sessão simulada:
+   - pela marca dos seus comandos;
+   - pelo PID, se a sessão não tiver comandos;
+   - pela ordem de execução, nas sessões com `FATAL 28P01`. Aqui o usuário da linha do log
+     precisa coincidir com o do evento.
+2. **Reescrita:** `timestamp` e `session_start` passam para o tempo simulado. O `session_id`
+   é recalculado (início simulado + PID), o "session time" da desconexão é refeito e a marca
+   é removida de `message` e `statement`, inclusive do `Query Text` dentro do plano.
+
+Detalhes:
+- O deslocamento real dentro de um evento é somado ao horário simulado, mas limitado para
+  nunca alcançar o evento seguinte.
+- A linha de desconexão é gravada pelo servidor de forma assíncrona, às vezes depois de linhas
+  de eventos posteriores. Uma janela de reordenação (`retime_reorder_window`) põe a saída em
+  ordem simulada.
+- Saída: um arquivo `.json.gz` por dia (UTC), no mesmo formato do jsonlog.
+
+**Verificações que fazem a execução falhar** (`retime_report.json`):
+- linha de cliente sem evento;
+- sessão do log ligada a duas sessões simuladas;
+- número ou usuário das falhas de login diferente do agendado;
+- comando executado sem a sua linha de duração (ou de erro);
+- linhas do plano diferentes das recebidas pelo cliente;
+- saída fora de ordem.
+
+Além disso, `verify.py` cruza o manifesto com o log remapeado: dentro do intervalo de cada
+cenário, o log do usuário precisa ter pelo menos tantos comandos e falhas de login quanto o
+cenário gerou.
+
 ## 5. Ambiente
 
 **D14 — Três redes Docker** (`rede_lan` 172.30.10.0/24, `rede_app` 172.30.20.0/24,
@@ -163,3 +195,87 @@ as linhas de falha de autenticação.
 **D19 — Python em container** (`python:3.13.17-slim-bookworm`, fixado por digest, dependências
 em `requirements.txt` e `requirements.lock`) e orquestração por `tasks.py`, porque o Windows
 não tem `make`.
+
+## 6. Simulação de acessos (Fase 2)
+
+**D20 — Perfis.** 10 usuários em 5 papéis, com privilégios mínimos (`config/profiles.yaml`):
+
+| Usuário(s) | Papel | Comportamento | Origem | Pode | Não pode |
+|---|---|---|---|---|---|
+| atendente_01..04 | atendente | turnos manhã (08–14) e tarde (13–19), seg–sáb | lan | ler cadastro, catálogo e locações; registrar locação e pagamento | `staff`, relatórios de loja, DELETE |
+| gerente_01..02 | gerente | 09–18 seg–sex, hora extra ocasional | lan (10% externa) | SELECT em tudo; alterar cliente, filme, funcionário; estornar pagamento | DELETE em locação; UPDATE em pagamento |
+| analista_01..02 | analista | 09–18 seg–sex | lan (20% externa) | só leitura de catálogo, locações, pagamentos e views de relatório | clientes, endereços, `staff` |
+| svc_locadora | servico_app | 24 h, curva horária (pico às 20h), conexão reciclada a cada hora | app | catálogo, disponibilidade, cliente, locação online | `staff`, alterar pagamento |
+| svc_batch | servico_batch | rotina diária às 02:00 | app | leituras grandes, UPDATE em lote, `REFRESH MATERIALIZED VIEW` (privilégio MAINTAIN) | demais escritas |
+
+As ações de cada papel estão em `config/queries.yaml` (SQL parametrizado). Chegadas seguem um
+processo de Poisson com taxa diária variável (lognormal); para o serviço, a taxa é modulada
+por hora (afinamento). Cada usuário usa um gerador aleatório próprio, derivado da semente e do
+nome: mudar um usuário ou as anomalias não altera o tráfego dos demais.
+
+**D21 — Ruído legítimo.** Sem ele, cada anomalia seria separável por um único atributo. Há:
+- erro de digitação: `SELCT`, 0,5% dos SELECT fora de transação, gera 42601;
+- senha errada antes de entrar: 2% das sessões interativas;
+- engano de permissão: 4% por usuário e dia de trabalho, gera 42501;
+- hora extra do gerente;
+- extração semanal do analista, que lê milhares de linhas;
+- rotina noturna do serviço batch: leituras grandes e UPDATE em lote, de madrugada.
+
+Várias intensidades "baixa" das anomalias ficam de propósito na mesma faixa desse ruído.
+
+**D22 — Anomalias** (`config/anomalies.yaml`): seis tipos × três intensidades, mais o tipo
+inédito `leitura_atipica`, que aparece só no teste.
+
+| Tipo | Quando | Baixa / Média / Alta |
+|---|---|---|
+| rajada | dentro de uma sessão do usuário | 3× / 8× / 20× a taxa normal do usuário, por 3–8 min |
+| fora_horario | horário em que o usuário nunca trabalha, nova sessão (60% rede externa) | 5 / 20 / 60 comandos |
+| volume_alto | dentro de uma sessão | 2 mil / 10 mil / tabelas inteiras (rental + payment) |
+| sem_permissao | dentro de uma sessão | 1–2 / 5 / 15 tentativas negadas |
+| falha_auth | qualquer horário (70% rede externa) | 3 / 10 / 40 tentativas |
+| dml_incomum | dentro de uma sessão | UPDATE/DELETE permitido em 5 / 50 / 500 linhas |
+| leitura_atipica (inédito) | dentro de uma sessão | 8 / 20 / 40 páginas de 50 linhas, a cada 30–60 s |
+
+As anomalias "dentro de uma sessão" usam a conexão já aberta pelo usuário, para que a nova
+conexão não denuncie o cenário. As ações de uma sessão nunca se intercalam: um comando de
+anomalia não cai dentro de uma transação aberta por uma ação normal.
+
+**Quantidades** (para 28 dias): 20 cenários no treino (tipo e intensidade sorteados), 5 por
+tipo × intensidade na validação e 8 no teste, mais 10 do tipo inédito no teste. A distância
+mínima entre cenários do mesmo usuário é de 30 min.
+
+**D23 — Rótulos isolados.** `events.parquet` (lido pelo executor e pelo retime) não tem
+nenhuma coluna de rótulo; o cenário de cada evento só serve para calcular o intervalo do
+manifesto (`manifest.csv`). *Evidência:* `test_exported_events_carry_no_label_information`.
+
+**D24 — Executor sequencial.** Um evento por vez, na ordem simulada, com `ClientCursor` e
+marca por comando. Como um comando bloqueado por lock de outra sessão simulada travaria a
+execução inteira, as sessões usam `lock_timeout = 5 s`; um bloqueio apareceria como erro
+inesperado (55P03), que faz a execução falhar. Só 42501 e 42601 são esperados.
+
+**D25 — Execução de referência** (`python tasks.py simulate`: 28 dias, semente 42; evidências
+em `results/simulacao/sim-s42-28d/`):
+
+| Medida | Valor |
+|---|---|
+| Eventos / comandos / falhas de login | 110.410 / 107.581 / 733 |
+| Sessões (conexões) | 1.048 |
+| Cenários anômalos (treino / validação / teste) | 20 / 90 / 154 (144 + 10 do tipo inédito) |
+| Erros provocados (42501 / 42601) / erros inesperados | 320 / 127 / 0 |
+| Execução | 103 s (~1.070 eventos/s); pipeline completo ~2,5 min |
+| Log bruto / com gzip / remapeado com gzip | 434 MB (5 arquivos, com rotação) / 21 MB / 21 MB |
+| Linhas remapeadas / sem evento / fora de ordem | 207.177 / 0 / 0 |
+| Linhas do plano comparadas com o cliente / divergências | 93.910 / 0 |
+| Cenários coerentes com o log remapeado | 264 de 264 |
+
+Atividade anômala (comandos e falhas de login dos cenários sobre o total de comandos, erros e
+falhas de login do split): treino 0,44%, validação 4,35%, teste 8,41%. O teste concentra mais
+anomalias para que cada tipo × intensidade tenha 8 casos; a contaminação por janela será
+medida na Fase 3.
+
+**Achado — `REFRESH MATERIALIZED VIEW` gera plano no auto_explain**, mesmo com
+`log_nested_statements = off`: a consulta interna da view é registrada como plano de topo,
+com as linhas gravadas na view (16), enquanto o cliente recebe `rowcount = -1`. *Evidência:*
+eventos 26 e 4137 da execução de 2 dias. **Consequência para a Fase 3:** as linhas do plano
+de um comando utilitário não são "linhas retornadas ao cliente"; o parser precisa classificar
+o comando antes de atribuir as linhas do plano.
