@@ -1,0 +1,34 @@
+{
+  "run_id": "sim-s7-28d",
+  "seed": 7,
+  "start_date": "2026-03-02",
+  "days": 28,
+  "timezone": "America/Sao_Paulo",
+  "splits": {
+    "train": {
+      "start_ms": 1772420400000,
+      "end_ms": 1773630000000,
+      "start_utc": "2026-03-02T03:00:00.000+00:00",
+      "end_utc": "2026-03-16T03:00:00.000+00:00"
+    },
+    "validation": {
+      "start_ms": 1773630000000,
+      "end_ms": 1774234800000,
+      "start_utc": "2026-03-16T03:00:00.000+00:00",
+      "end_utc": "2026-03-23T03:00:00.000+00:00"
+    },
+    "test": {
+      "start_ms": 1774234800000,
+      "end_ms": 1774839600000,
+      "start_utc": "2026-03-23T03:00:00.000+00:00",
+      "end_utc": "2026-03-30T03:00:00.000+00:00"
+    }
+  },
+  "id_pools_sha256": "ca31cfa6f9e80efb22feab768ac068e0b069a4a308ca9e8906892ed1f63801fd",
+  "config_sha256": {
+    "experiment.yaml": "2b4bc8950013b18f26502800dfcc02767abce03eb3b46337594095d63f7eeb12",
+    "profiles.yaml": "c0812357a306e44f08bf98607ab1273e9c047d18a2e5a7bba5138249be151f43",
+    "queries.yaml": "80581d99273e13de2ab9aa2eee258cadfb0886a81775689a75da62dc48e661cb",
+    "anomalies.yaml": "5e341de1284c9049e6732d710a73644ad3af7323bf787b366fbd287122176670"
+  }
+}

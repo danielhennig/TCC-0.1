@@ -58,9 +58,10 @@ class AnomalyType:
     actions: dict[str, str] | None = None
     novel: bool = False
     novel_splits: tuple[str, ...] = ()
-    novel_count: int = 0
+    novel_per_role_intensity: int = 0  # desenho balanceado: cenários por papel × intensidade
     page_size: int = 0
     first_page: tuple[int, int] = (0, 0)
+    page_pools: dict[str, str] | None = None  # papel -> pool de ids da tabela paginada
 
 
 @dataclass(frozen=True)
@@ -138,9 +139,12 @@ def _parse_type(name: str, spec: dict[str, Any], novel: bool) -> AnomalyType:
         actions={str(k): str(v) for k, v in spec["actions"].items()} if "actions" in spec else None,
         novel=novel,
         novel_splits=tuple(str(s) for s in spec.get("splits", ())),
-        novel_count=int(spec.get("count", 0)),
+        novel_per_role_intensity=int(spec.get("count_per_role_intensity", 0)),
         page_size=int(spec.get("page_size", 0)),
         first_page=(int(spec.get("first_page", [0, 0])[0]), int(spec.get("first_page", [0, 0])[1])),
+        page_pools={str(k): str(v) for k, v in spec["page_pools"].items()}
+        if "page_pools" in spec
+        else None,
     )
 
 
@@ -169,25 +173,49 @@ def _validate(
                     raise ConfigError(f"sem_permissao: papel {role} sem forbidden_actions")
         if atype.novel and set(atype.novel_splits) - set(SPLITS):
             raise ConfigError(f"anomalia {atype.name}: split inválido em {atype.novel_splits}")
+        if atype.page_pools is not None:
+            if set(atype.roles) - atype.page_pools.keys():
+                raise ConfigError(f"anomalia {atype.name}: falta page_pools para algum papel")
+            unknown = set(atype.page_pools.values()) - catalog.id_pools.keys()
+            if unknown:
+                raise ConfigError(f"anomalia {atype.name}: pools desconhecidos {sorted(unknown)}")
 
 
 # --- Plano e posicionamento -----------------------------------------------------------------
 
 
-def plan_scenarios(
-    config: AnomalyConfig, scale: float, rng: random.Random
-) -> list[tuple[str, str, str]]:
-    """Lista (split, tipo, intensidade) dos cenários, já escalada pela duração da execução."""
+PlanItem = tuple[str, str, str, str | None]  # split, tipo, intensidade, papel (ou qualquer)
+
+
+def plan_scenarios(config: AnomalyConfig, scale: float, rng: random.Random) -> list[PlanItem]:
+    """Cenários (split, tipo, intensidade, papel), já escalados pela duração da execução.
+
+    O tipo inédito usa um desenho balanceado (cada papel com cada intensidade), para que
+    intensidade e perfil do usuário não se confundam com poucos cenários.
+    """
     regular = [t for t in config.types.values() if not t.novel]
     cells = [(t.name, i) for t in regular for i in INTENSITIES]
-    plan = [("train", *rng.choice(cells)) for _ in range(_scaled(config.train_total, scale))]
+    plan: list[PlanItem] = [
+        ("train", *rng.choice(cells), None) for _ in range(_scaled(config.train_total, scale))
+    ]
     for split in ("validation", "test"):
         repeats = _scaled(config.per_cell[split], scale)
-        plan += [(split, name, intensity) for name, intensity in cells for _ in range(repeats)]
+        plan += [(split, n, i, None) for n, i in cells for _ in range(repeats)]
     for novel in (t for t in config.types.values() if t.novel):
+        full = [
+            (role, i)
+            for role in novel.roles
+            for i in INTENSITIES
+            for _ in range(novel.novel_per_role_intensity)
+        ]
+        wanted = _scaled(len(full), scale)
+        if wanted < len(full):
+            # Execução curta: amostra em diagonal (papel e intensidade avançam juntos), que não
+            # repete papel nem intensidade enquanto houver opção nova.
+            n_roles, n_int = len(novel.roles), len(INTENSITIES)
+            full = [(novel.roles[k % n_roles], INTENSITIES[k % n_int]) for k in range(wanted)]
         for split in novel.novel_splits:
-            count = _scaled(novel.novel_count, scale)
-            plan += [(split, novel.name, INTENSITIES[i % 3]) for i in range(count)]
+            plan += [(split, novel.name, i, role) for role, i in full]
     rng.shuffle(plan)
     return plan
 
@@ -221,18 +249,28 @@ class AnomalyInjector:
         self.splits = splits
         self.rng = random.Random(f"{seed}:anomalies")
         self.taken: dict[str, list[tuple[int, int]]] = {u.name: [] for u in profiles.users}
+        for atype in config.types.values():
+            for role, pool in (atype.page_pools or {}).items():
+                if len(ids[pool]) <= atype.page_size:
+                    raise ConfigError(
+                        f"anomalia {atype.name}: tabela do pool {pool} ({len(ids[pool])} linhas, "
+                        f"papel {role}) é menor que uma página de {atype.page_size}"
+                    )
 
     def inject(self, scale: float) -> list[Scenario]:
         plan = plan_scenarios(self.config, scale, self.rng)
         return [
-            self._place(i, split, name, intensity)
-            for i, (split, name, intensity) in enumerate(plan, start=1)
+            self._place(i, split, name, intensity, role)
+            for i, (split, name, intensity, role) in enumerate(plan, start=1)
         ]
 
-    def _place(self, scenario_id: int, split_name: str, type_name: str, intensity: str) -> Scenario:
+    def _place(
+        self, scenario_id: int, split_name: str, type_name: str, intensity: str, role: str | None
+    ) -> Scenario:
         atype = self.config.types[type_name]
         spec = atype.intensities[intensity]
-        candidates = [u for u in self.profiles.users if u.role in atype.roles]
+        roles = (role,) if role is not None else atype.roles
+        candidates = [u for u in self.profiles.users if u.role in roles]
         split = self.splits[split_name]
         for _ in range(self.config.max_attempts):
             user = self.rng.choice(candidates)
@@ -442,9 +480,13 @@ class AnomalyInjector:
             assert host is not None and atype.actions is not None
             pages = int(spec["pages"])
             first_page = rng.randint(*atype.first_page)
+            # O deslocamento dá a volta na tabela: sem isso, páginas além do fim voltariam vazias
+            # e a intensidade alta pareceria mais fraca que a baixa.
+            rows = len(self.ids[atype.page_pools[user.role]]) if atype.page_pools else 0
+            span = max(rows - atype.page_size, 1)
             t = start
             for page in range(pages):
-                offset = (first_page + page) * atype.page_size
+                offset = ((first_page + page) * atype.page_size) % span
                 context = {"offset": offset, "page_size": atype.page_size}
                 end = act(host, t, atype.actions[user.role], context)
                 if end is None:

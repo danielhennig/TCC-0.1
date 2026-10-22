@@ -25,9 +25,12 @@ O SACLA *auxilia* a identificação; nunca classifica algo como ataque.
 ## Comandos (Windows sem make: usar `python tasks.py`)
 `setup` (recria tudo do zero) · `reset` · `smoke` · `bench` · `simulate [--days N --seed S]`
 (recria banco e logs e roda a simulação) · `retime` · `features [--window N --run-id ID]`
-(conjunto rotulado em `data/features/`) · `test` · `lint` · `fmt` · `lock` · `psql`
+(conjunto rotulado em `data/features/`) · `evaluate` (resultados em `results/experimentos/`)
+· `robustness --exp-id ID` · `test` · `lint` · `fmt` · `lock` · `psql`
 · `shell`. Tudo roda nos containers do `docker-compose.yml`; o Docker Desktop precisa estar
-ligado. Não rode outro comando de container enquanto um `simulate` estiver recriando o banco.
+ligado. Não rode outro comando que use o banco enquanto um `simulate` estiver recriando-o;
+testes, lint, `features` e `evaluate` usam o serviço `analise` (sem IPs fixos) e podem rodar em
+paralelo.
 
 ## Simulação (Fase 2)
 Saídas em `data/runs/<run_id>/`; o SACLA lê só `retimed/`. Rótulos ficam só em

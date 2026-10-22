@@ -6,11 +6,16 @@ Usa a configuração real do projeto e pools de ids sintéticos (não precisa de
 from __future__ import annotations
 
 import math
+import random
 from collections import Counter, defaultdict
+from dataclasses import replace
 from functools import cache
 from itertools import pairwise
 
-from simlab.anomalies import INTENSITIES, load_anomalies
+import pytest
+
+from sacla.config import ConfigError
+from simlab.anomalies import INTENSITIES, load_anomalies, plan_scenarios
 from simlab.behavior import load_behaviors
 from simlab.catalog import TYPO_TO, load_catalog
 from simlab.lab import load_experiment
@@ -120,6 +125,33 @@ def test_novel_type_only_in_test_split() -> None:
     assert novel and {s.split for s in novel} == {"test"}
 
 
+def test_novel_type_is_balanced_over_roles_and_intensities() -> None:
+    settings, _, _, _, anomalies = _inputs()
+    novel_type = next(t for t in anomalies.types.values() if t.novel)
+    cells = Counter((s.role, s.intensity) for s in _schedule().scenarios if s.novel)
+    full = len(novel_type.roles) * len(INTENSITIES) * novel_type.novel_per_role_intensity
+    # Esta agenda tem metade do período nominal: metade das combinações, sem repetir nenhuma,
+    # cobrindo todos os papéis e todas as intensidades.
+    assert sum(cells.values()) == math.ceil(full * DAYS / settings.nominal_days)
+    assert set(cells.values()) == {1}
+    assert {role for role, _ in cells} == set(novel_type.roles)
+    assert {intensity for _, intensity in cells} == set(INTENSITIES)
+
+
+def test_novel_pagination_wraps_inside_the_table() -> None:
+    _, _, _, _, anomalies = _inputs()
+    novel_type = next(t for t in anomalies.types.values() if t.novel)
+    assert novel_type.page_pools is not None
+    for event in _schedule().events:
+        params = event.statement.params if event.statement else None
+        if params and "offset" in params and "page_size" in params:
+            user_role = next(
+                s.role for s in _schedule().scenarios if s.scenario_id == event.scenario
+            )
+            rows = len(IDS[novel_type.page_pools[user_role]])
+            assert 0 <= params["offset"] <= rows - params["page_size"]
+
+
 def test_scenarios_fit_split_and_keep_distance_per_user() -> None:
     schedule = _schedule()
     _, _, _, _, anomalies = _inputs()
@@ -158,3 +190,25 @@ def test_failed_login_events_match_scenario_attempts() -> None:
     for s in schedule.scenarios:
         if s.type == "falha_auth":
             assert per_scenario[s.scenario_id] == s.failed_logins == s.params["attempts"]
+
+
+def test_short_runs_scale_the_novel_type_keeping_roles_and_intensities_diverse() -> None:
+    _, _, _, _, anomalies = _inputs()
+    novel_type = next(t for t in anomalies.types.values() if t.novel)
+    full = [p for p in plan_scenarios(anomalies, 1.0, random.Random(0)) if p[1] == novel_type.name]
+    short = [
+        p for p in plan_scenarios(anomalies, 0.25, random.Random(0)) if p[1] == novel_type.name
+    ]
+    cells = len(novel_type.roles) * len(INTENSITIES) * novel_type.novel_per_role_intensity
+    assert len(full) == cells
+    assert len(short) == math.ceil(cells * 0.25)
+    # A amostra reduzida espalha papéis e intensidades (não repete enquanto há opção nova).
+    assert len({p[3] for p in short}) == min(len(short), len(novel_type.roles))
+    assert len({p[2] for p in short}) == min(len(short), len(INTENSITIES))
+
+
+def test_page_pool_smaller_than_a_page_is_rejected() -> None:
+    settings, profiles, behaviors, catalog, anomalies = _inputs()
+    tiny = {**IDS, "staff": [1, 2]}
+    with pytest.raises(ConfigError, match="menor que uma página"):
+        build_schedule(replace(settings, days=DAYS), profiles, behaviors, catalog, anomalies, tiny)

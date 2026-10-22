@@ -1,8 +1,8 @@
 {
-  "lines": 207177,
+  "lines": 207769,
   "malformed_lines": 0,
   "unparseable_plans": 0,
-  "client_lines": 207177,
+  "client_lines": 207769,
   "background_lines": 0,
   "sessions_mapped": {
     "marca": 1048,
@@ -17,13 +17,13 @@
     "problems": []
   },
   "statements": {
-    "executed": 107581,
+    "executed": 107909,
     "missing_duration_line": 0,
     "missing_error_line": 0,
     "examples": []
   },
   "rows_check": {
-    "compared": 93910,
+    "compared": 94174,
     "mismatches": 0,
     "examples": []
   },

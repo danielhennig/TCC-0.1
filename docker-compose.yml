@@ -60,6 +60,17 @@ services:
       db:
         condition: service_healthy
 
+  # Mesma imagem, sem IPs fixos e sem depender do banco: testes, lint, conjuntos de dados e
+  # avaliação. Pode rodar em paralelo com o `sacla` (que ocupa os IPs fixos da simulação).
+  analise:
+    image: sacla-py:3.13.17
+    profiles: ["tools"]
+    env_file: .env
+    working_dir: /app
+    volumes:
+      - .:/app
+      - pglogs:/logs:ro
+
 networks:
   rede_lan:
     ipam:

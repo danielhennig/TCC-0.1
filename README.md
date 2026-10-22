@@ -26,6 +26,8 @@ python tasks.py bench   # mede o overhead do registro de comandos e do auto_expl
 python tasks.py simulate            # 28 dias simulados (recria banco e logs antes)
 python tasks.py simulate --days 2   # execução curta de verificação
 python tasks.py features            # janelas de 5 min com atributos e rótulos (--window N)
+python tasks.py evaluate            # Isolation Forest: ajuste, teste, regras e sensibilidade
+python tasks.py robustness --exp-id <pasta>   # reavalia em simulações com outras sementes
 python tasks.py test    # testes (pytest)
 python tasks.py lint    # ruff + mypy
 ```

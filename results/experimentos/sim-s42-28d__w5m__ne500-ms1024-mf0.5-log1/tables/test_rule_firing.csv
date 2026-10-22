@@ -1,0 +1,8 @@
+rule,fires_normal,fires_anomalous,precision
+falhas_autenticacao,0,33,1.0
+erro_permissao,1,41,0.9761904761904762
+rajada,0,7,1.0
+volume,7,42,0.8571428571428571
+dml_volume,0,29,1.0
+hora_inedita,0,115,1.0
+any,8,231,0.9665271966527197

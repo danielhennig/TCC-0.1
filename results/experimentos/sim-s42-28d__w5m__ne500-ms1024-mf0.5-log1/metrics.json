@@ -1,0 +1,142 @@
+{
+  "exp_id": "sim-s42-28d__w5m__ne500-ms1024-mf0.5-log1",
+  "run_id": "sim-s42-28d",
+  "window_minutes": 5,
+  "chosen_params": {
+    "n_estimators": 500,
+    "max_samples": 1024,
+    "max_features": 0.5,
+    "log1p": true
+  },
+  "selection": {
+    "metric": "f1",
+    "tuning_seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "validation_best": {
+    "f1_mean": 0.5695021931404175,
+    "f1_std": 0.0171098846980422,
+    "pr_auc_mean": 0.5004539110337405,
+    "roc_auc_mean": 0.9328017867225942
+  },
+  "contamination": {
+    "train": {
+      "windows": 9109,
+      "anomalous": 34,
+      "contamination_pct": 0.37
+    },
+    "validation": {
+      "windows": 4684,
+      "anomalous": 176,
+      "contamination_pct": 3.76
+    },
+    "test": {
+      "windows": 4662,
+      "anomalous": 337,
+      "contamination_pct": 7.23
+    }
+  },
+  "test": [
+    {
+      "detector": "isolation_forest",
+      "seeds": 10,
+      "precision_mean": 0.7451766298381693,
+      "precision_std": 0.019331586118488567,
+      "recall_mean": 0.558160237388724,
+      "recall_std": 0.020909999466603196,
+      "f1_mean": 0.6378068440859298,
+      "f1_std": 0.011037646940836948,
+      "fp_mean": 64.6,
+      "fp_std": 8.113089560840693,
+      "fp_rate_mean": 0.014936416184971097,
+      "fp_rate_std": 0.0018758588579978472,
+      "alerts_mean": 252.7,
+      "alerts_std": 14.213061285701652,
+      "scenario_recall_mean": 0.698076923076923,
+      "scenario_recall_std": 0.023102628924402548,
+      "roc_auc_mean": 0.9394157218572581,
+      "roc_auc_std": 0.0019421741414623454,
+      "pr_auc_mean": 0.6438322861965021,
+      "pr_auc_std": 0.007871755290542312
+    },
+    {
+      "detector": "if_sem_rotulos",
+      "seeds": 10,
+      "precision_mean": 0.6474679850396676,
+      "precision_std": 0.026281183176554136,
+      "recall_mean": 0.24747774480712165,
+      "recall_std": 0.022650624785704992,
+      "f1_mean": 0.3577736930041287,
+      "f1_std": 0.026788684740658972,
+      "fp_mean": 45.3,
+      "fp_std": 3.9735234853828274,
+      "fp_rate_mean": 0.010473988439306359,
+      "fp_rate_std": 0.0009187337538457403,
+      "alerts_mean": 128.7,
+      "alerts_std": 9.055998625834212,
+      "scenario_recall_mean": 0.33782051282051284,
+      "scenario_recall_std": 0.032553052390791704,
+      "roc_auc_mean": 0.901992247131267,
+      "roc_auc_std": 0.009567394391796174,
+      "pr_auc_mean": 0.4560049273647091,
+      "pr_auc_std": 0.03304892423768738
+    },
+    {
+      "detector": "regras",
+      "seeds": 1,
+      "precision_mean": 0.9665271966527197,
+      "precision_std": 0.0,
+      "recall_mean": 0.685459940652819,
+      "recall_std": 0.0,
+      "f1_mean": 0.8020833333333334,
+      "f1_std": 0.0,
+      "fp_mean": 8.0,
+      "fp_std": 0.0,
+      "fp_rate_mean": 0.0018497109826589595,
+      "fp_rate_std": 0.0,
+      "alerts_mean": 239.0,
+      "alerts_std": 0.0,
+      "scenario_recall_mean": 0.7307692307692307,
+      "scenario_recall_std": 0.0,
+      "roc_auc_mean": NaN,
+      "roc_auc_std": NaN,
+      "pr_auc_mean": NaN,
+      "pr_auc_std": NaN
+    },
+    {
+      "detector": "if_mais_regras",
+      "seeds": 10,
+      "precision_mean": 0.7996020796768459,
+      "precision_std": 0.018747540419183167,
+      "recall_mean": 0.7851632047477745,
+      "recall_std": 0.009086990368234132,
+      "f1_mean": 0.7921686300227901,
+      "f1_std": 0.009040886324299321,
+      "fp_mean": 66.5,
+      "fp_std": 7.975657409336932,
+      "fp_rate_mean": 0.015375722543352599,
+      "fp_rate_std": 0.001844082637996978,
+      "alerts_mean": 331.1,
+      "alerts_std": 9.538809615926343,
+      "scenario_recall_mean": 0.8474358974358974,
+      "scenario_recall_std": 0.011225577381678375,
+      "roc_auc_mean": NaN,
+      "roc_auc_std": NaN,
+      "pr_auc_mean": NaN,
+      "pr_auc_std": NaN
+    }
+  ],
+  "timings": {
+    "leitura_e_eventos_s": 5.66,
+    "agregacao_s": 3.19,
+    "linhas_por_segundo": 36708,
+    "treino_modelo_s_medio": 0.4274101082000925,
+    "score_teste_s_medio": 0.09331559919992287,
+    "busca_em_grade_s": 71.65936619700005
+  }
+}

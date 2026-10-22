@@ -391,3 +391,166 @@ Resultado na execução de referência (`python tasks.py features`, janela de 5 
 | Tempo: leitura + eventos / agregação | 7,7 s / 2,8 s |
 
 A execução de 2 dias passa pela mesma conferência (8.224 comandos, iguais por usuário).
+
+## 8. Modelo, avaliação e baseline (Fase 4)
+
+**D32 — Isolation Forest (`sacla/model.py`, módulo 3).** É o único algoritmo, do
+scikit-learn.
+- O score de anomalia é `−score_samples`: quanto maior, mais anômala a janela.
+- `contamination` fica em `'auto'`. No scikit-learn esse parâmetro só define o limiar
+  (`offset_`) e não muda as árvores; por isso o SACLA usa um limiar de score explícito, e
+  ajustar `contamination` e o limiar seria ajustar a mesma coisa duas vezes.
+- `log(1 + x)` nas contagens e volumes é um hiperparâmetro (`log1p`), escolhido na validação.
+- `n_jobs = 1`: com ~9 mil janelas, o treino paralelo foi mais lento (0,58 s contra 0,45 s com
+  500 árvores), por causa do custo de coordenação.
+
+**D33 — Protocolo de avaliação (`evaluation/experiment.py`).**
+1. **Treino:** split de treino inteiro, sem rótulos, inclusive as janelas anômalas
+   (contaminação real de 0,40%).
+2. **Ajuste, só na validação:** grade completa de `n_estimators` {100, 200, 500} ×
+   `max_samples` {256, 1024, 0,1} × `max_features` {0,5; 0,75; 1,0} × `log1p` {sim, não} = 54
+   combinações, cada uma com 5 sementes. Para cada uma, o limiar de melhor F1 na validação.
+   Escolhe-se a combinação de maior F1 médio (desempate: PR-AUC).
+3. **Teste, usado uma vez:** a configuração escolhida é treinada com 10 sementes; o limiar de
+   cada semente vem da validação. São reportadas média e desvio. As 10 sementes medem a
+   variação do modelo; o teste não influencia nenhuma escolha.
+4. **Configuração sem rótulos:** padrões do scikit-learn e limiar no quantil 99% dos scores do
+   próprio treino. Mostra o que se obtém sem nenhuma janela rotulada, porque ajustar na
+   validação é otimista: em produção não há rótulos.
+5. **Métricas no teste:**
+   - por janela: precisão, recall, F1, FP (contagem e taxa), ROC-AUC e PR-AUC;
+   - por tipo × intensidade: recall por janela;
+   - por cenário: o cenário é detectado se ao menos uma de suas janelas é sinalizada;
+   - tempo de cada etapa.
+
+**D34 — Baseline de regras (`config/rules.yaml`, `evaluation/rules_baseline.py`).** Seis
+regras, com limiares fixados antes de rodar a avaliação. As estatísticas por usuário vêm só do
+treino.
+
+| Regra | Dispara quando |
+|---|---|
+| falhas_autenticacao | 3 ou mais falhas de login na janela |
+| erro_permissao | 1 ou mais erros de permissão |
+| rajada | comandos acima de 3 × o p99 do usuário |
+| volume | linhas retornadas acima do máximo do usuário |
+| dml_volume | linhas afetadas acima do máximo do usuário |
+| hora_inedita | hora nunca vista no histórico do usuário |
+
+As regras foram escritas pensando nos seis tipos conhecidos; o tipo inédito não tem regra, de
+propósito. Para responder se o Isolation Forest "agrega algo além das regras", são
+reportados:
+- os três detectores lado a lado;
+- a combinação IF ∪ regras;
+- por cenário, o que só o IF detecta, o que só as regras detectam, o que ambos detectam e o
+  que nenhum detecta.
+
+**D35 — Sensibilidade, só na validação.**
+- Hiperparâmetros: varia um de cada vez, com os demais na configuração escolhida (sai da
+  grade).
+- Tamanho da janela (1, 5 e 15 min): o conjunto é reagregado e a grade é refeita para cada
+  tamanho. O F1 por janela não é comparável entre tamanhos, porque a unidade muda; por isso
+  também se compara a fração de cenários detectados.
+
+**D36 — Robustez à semente da simulação.** A configuração escolhida fica congelada e é
+reavaliada em duas novas simulações (sementes 7 e 2026), com o limiar escolhido na validação
+de cada uma (`python tasks.py robustness --exp-id <experimento>`).
+
+**Ambiente:** testes, lint, conjuntos e avaliação rodam no serviço `analise` (mesma imagem,
+sem IPs fixos). Por isso podem rodar junto com uma simulação, que ocupa os IPs fixos do
+serviço `sacla`.
+
+**D37 — Correções na simulação antes da avaliação final.** A primeira rodada da avaliação
+expôs três defeitos. Eles foram corrigidos, e a simulação, os conjuntos e a avaliação foram
+refeitos do zero. Nenhum hiperparâmetro, atributo ou regra foi alterado em função do teste.
+- **Tipo inédito confundido com o usuário.** Todos os cenários de intensidade alta caíam no
+  mesmo atendente. Agora o plano é balanceado: cada papel × intensidade aparece o mesmo número
+  de vezes (`count_per_role_intensity`). Em execuções mais curtas, usa-se um subconjunto em
+  diagonal que cobre todos os papéis e intensidades.
+- **Paginação passando do fim da tabela.** Isso gerava páginas vazias, com zero linhas. O
+  deslocamento agora dá a volta dentro da tabela, e a configuração rejeita tabelas menores que
+  uma página.
+- **Sensibilidade de `max_samples` incompleta.** A coluna misturava inteiros e frações e
+  perdia valores. Agora ela é gravada como texto.
+
+**D38 — Resultados da Fase 4** (`results/experimentos/sim-s42-28d__w5m__ne500-ms1024-mf0.5-log1/`,
+robustez em `results/robustez/`). O teste tem 4.662 janelas, 337 delas anômalas (7,23%), de 156
+cenários. Configuração escolhida na validação: 500 árvores, `max_samples` 1024,
+`max_features` 0,5 e `log1p`.
+
+| Detector (teste, semente 42) | Precisão | Recall | F1 | FP | Cenários detectados | ROC-AUC | PR-AUC |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Isolation Forest (ajustado) | 74,5 ± 1,9 | 55,8 ± 2,1 | 63,8 ± 1,1 | 65 | 69,8 ± 2,3 | 0,939 | 0,644 |
+| Isolation Forest (sem rótulos) | 64,7 ± 2,6 | 24,7 ± 2,3 | 35,8 ± 2,7 | 45 | 33,8 ± 3,3 | 0,902 | 0,456 |
+| Regras | 96,7 | 68,5 | 80,2 | 8 | 73,1 | — | — |
+| Isolation Forest ∪ regras | 80,0 ± 1,9 | 78,5 ± 0,9 | 79,2 ± 0,9 | 66 | 84,7 ± 1,1 | — | — |
+
+Entre as três simulações (sementes 42, 7 e 2026; média ± desvio das médias), o F1 foi:
+
+| Detector | F1 entre simulações | Cenários detectados |
+|---|---:|---:|
+| IF ajustado | 62,4 ± 1,2 | 66,9 ± 3,2 |
+| IF sem rótulos | 35,9 ± 2,4 | 32,1 ± 3,6 |
+| Regras | 78,8 ± 4,2 | 73,1 ± 1,3 |
+| IF ∪ regras | 79,0 ± 3,0 | 85,0 ± 3,5 |
+
+O resultado do IF quase não depende da semente da simulação (desvio de 1,2 ponto no F1). As
+regras variam mais (4,2 pontos).
+
+**Interpretação**
+1. **As regras vencem o IF sozinho, como esperado.** Elas foram escritas conhecendo os seis
+   tipos, e o comportamento normal simulado é muito regular. A principal ameaça à validade é
+   esse viés de quem projeta os dois lados (ver item 6).
+2. **O IF agrega detecção.** A combinação IF ∪ regras eleva o recall de 68,5% para 78,5% e os
+   cenários detectados de 73,1% para 84,7%, ao custo de 8 → 66 falsos positivos. Os cenários
+   pegos só pelo IF (maioria das sementes) concentram-se em:
+   - `rajada` (8 cenários);
+   - `fora_horario` (4);
+   - o tipo inédito `leitura_atipica` (3).
+
+   Os cenários pegos só pelas regras concentram-se em `dml_incomum` (7), `falha_auth` (5) e
+   `sem_permissao` (5). Nesses três tipos, um único evento já é sinal forte, e uma regra de
+   limiar fixo o captura sem custo.
+3. **Tipo inédito (`leitura_atipica`).** O IF detecta 25–55% dos cenários conforme a
+   intensidade, e a união chega a 50–75%. As regras pegam alguns cenários pela regra `volume`
+   (15 das 49 janelas), mas só para usuários de pouco volume: gerentes e um atendente. Isso é
+   coincidência do desenho, não uma regra para o tipo. Por cenário:
+   - os 3 dos analistas são detectados só pelo IF;
+   - os 3 dos gerentes, só pelas regras;
+   - 1 de atendente, por ambos;
+   - os 3 do serviço `svc_locadora` e 2 de atendentes, por nenhum.
+
+   Para o serviço, que já lê clientes o dia todo, a paginação lenta se mistura ao tráfego
+   normal.
+4. **Sem rótulos o desempenho cai pela metade** (F1 35,8). Em particular, `falha_auth` fica
+   em 0%. Uma janela só com falhas de login tem quase todos os atributos zerados e parece
+   "pouca atividade", que é comum. O quantil 99% do treino é um limiar conservador. Ajustar o
+   limiar na validação é a parte que mais depende de rótulos.
+5. **O que ninguém detecta.**
+   - `rajada` baixa (3× a taxa por 2–10 min) fica dentro da variação normal de uma janela de
+     5 min.
+   - `dml_incomum` média tem recall menor que a baixa (15% contra 49% no IF). Há dois motivos:
+     - **Sorteio de papéis.** A intensidade média caiu em atendentes e no serviço, para quem
+       UPDATE é rotina. A baixa caiu em gerentes, para quem DELETE é raro. É a mesma confusão
+       papel × intensidade corrigida no tipo inédito (D37); nos tipos conhecidos ela foi mantida
+       porque o sorteio é aleatório e documentado.
+     - **Contaminação do treino.** Um cenário `dml_incomum` médio caiu no treino em
+       `svc_locadora` e elevou o máximo de linhas afetadas desse usuário para 52. Isso mascara
+       os cenários de 50 linhas tanto para a regra `dml_volume` quanto para o IF.
+
+     Esse efeito é real e vale para qualquer referência por máximo: anomalias no histórico
+     elevam o limiar.
+   - O IF não tem atributo relativo de linhas afetadas (há z robusto só para comandos e linhas
+     retornadas). Isso é uma limitação registrada, não corrigida: alterar atributos depois de
+     ver o teste violaria o protocolo.
+6. **Ameaças à validade.**
+   - Dados sintéticos com rotina regular.
+   - O mesmo autor desenha anomalias, atributos e regras.
+   - Um sorteio de papéis por tipo.
+   - Contaminação de treino pequena (0,37%).
+   - Três simulações apenas.
+7. **Janela.** A janela de 1 min detecta mais cenários na validação (79,6% contra 65,6%),
+   porém com o dobro de alertas (394 contra 181). A de 15 min tem F1 maior porque cada janela
+   agrega mais sinal, mas detecta menos cenários. A janela padrão de 5 min é o meio-termo, sem
+   ajuste no teste.
+8. **Custo.** Leitura e eventos levam 5,7 s (36,7 mil linhas/s). A agregação, 3,2 s. O treino,
+   0,43 s, e o score do teste, 0,09 s. O SACLA processa quatro semanas de log em ~10 s.

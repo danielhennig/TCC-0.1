@@ -82,13 +82,17 @@ novel:
   leitura_atipica:
     description: leitura paginada de dados permitidos, mas atípica para o perfil
     splits: [test]
-    count: 10
+    # Desenho balanceado: um cenário por papel × intensidade (4 x 3 = 12), para que a
+    # intensidade não se confunda com o perfil do usuário sorteado.
+    count_per_role_intensity: 1
     roles: [atendente, gerente, analista, servico_app]
     when: active
     actions: {atendente: pagina_clientes, gerente: pagina_staff, analista: pagina_pagamentos,
               servico_app: pagina_emails}
     page_size: 50               # usado como LIMIT nas consultas pagina_* (queries.yaml)
     first_page: [0, 5]          # página inicial sorteada
+    # Tabela paginada por papel (pool de ids de queries.yaml): o deslocamento dá a volta nela.
+    page_pools: {atendente: customer, gerente: staff, analista: payment, servico_app: customer}
     intensities:
       baixa: {pages: 8, interval_s: [30, 60]}
       media: {pages: 20, interval_s: [30, 60]}

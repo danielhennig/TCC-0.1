@@ -1,0 +1,136 @@
+{
+  "run_id": "sim-s2026-28d",
+  "run_fingerprint": "c103916dcb21076de07e2b9ce180d07c665ded0f6e29fbf34f4cefcb27deeccc",
+  "window_minutes": 5,
+  "history_end_utc": "2026-03-16T03:00:00.000+00:00",
+  "features": [
+    "n_commands",
+    "n_select",
+    "n_insert",
+    "n_update",
+    "n_delete",
+    "n_ddl",
+    "n_other",
+    "n_errors",
+    "n_permission_denied",
+    "n_auth_failures",
+    "n_connections",
+    "rows_returned_sum",
+    "rows_returned_max",
+    "rows_affected_sum",
+    "duration_mean_ms",
+    "duration_max_ms",
+    "duration_p95_ms",
+    "n_tables",
+    "n_ips",
+    "hour_sin",
+    "hour_cos",
+    "weekend",
+    "z_commands",
+    "z_rows_returned",
+    "hour_surprisal",
+    "new_tables_frac",
+    "new_ips_frac",
+    "new_query_shapes_frac"
+  ],
+  "read": {
+    "files": 29,
+    "records": 205816,
+    "malformed": 0,
+    "truncated": 0,
+    "unknown_zone": 0
+  },
+  "parse": {
+    "events": 109565,
+    "unpaired_plans": 0,
+    "unparseable_plans": 0,
+    "ignored_lines": 2823
+  },
+  "events": 109565,
+  "events_by_kind": {
+    "query": 106300,
+    "connection": 1039,
+    "disconnection": 1039,
+    "auth_failure": 745,
+    "query_error": 442
+  },
+  "users_with_history": 10,
+  "windows_by_split": {
+    "train": {
+      "windows": 9109,
+      "anomalous": 50,
+      "contamination_pct": 0.55
+    },
+    "validation": {
+      "windows": 4623,
+      "anomalous": 180,
+      "contamination_pct": 3.89
+    },
+    "test": {
+      "windows": 4748,
+      "anomalous": 332,
+      "contamination_pct": 6.99
+    }
+  },
+  "anomalous_windows_by_type": {
+    "dml_incomum": {
+      "test": 24,
+      "train": 3,
+      "validation": 15
+    },
+    "falha_auth": {
+      "test": 42,
+      "train": 4,
+      "validation": 24
+    },
+    "fora_horario": {
+      "test": 112,
+      "train": 26,
+      "validation": 74
+    },
+    "leitura_atipica": {
+      "test": 47,
+      "train": 0,
+      "validation": 0
+    },
+    "rajada": {
+      "test": 43,
+      "train": 9,
+      "validation": 32
+    },
+    "sem_permissao": {
+      "test": 39,
+      "train": 7,
+      "validation": 20
+    },
+    "volume_alto": {
+      "test": 25,
+      "train": 1,
+      "validation": 15
+    }
+  },
+  "crosscheck": {
+    "totals": {
+      "executor": {
+        "comandos": 106742,
+        "comandos_com_erro": 442,
+        "falhas_de_login": 745,
+        "conexoes": 1039,
+        "linhas": 2696516
+      },
+      "sacla": {
+        "comandos": 106742,
+        "comandos_com_erro": 442,
+        "falhas_de_login": 745,
+        "conexoes": 1039,
+        "linhas": 2696516
+      }
+    },
+    "differences": [],
+    "passed": true
+  },
+  "timings_s": {
+    "leitura_e_eventos_s": 5.5,
+    "agregacao_s": 2.83
+  }
+}

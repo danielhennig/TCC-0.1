@@ -1,5 +1,6 @@
 {
   "run_id": "sim-s42-28d",
+  "run_fingerprint": "991a82d41bfc4b1e68d77ac8a063408d3a10c48ec43ec93ec7e4f5eb5a365008",
   "window_minutes": 5,
   "history_end_utc": "2026-03-16T03:00:00.000+00:00",
   "features": [
@@ -34,41 +35,41 @@
   ],
   "read": {
     "files": 29,
-    "records": 207177,
+    "records": 207769,
     "malformed": 0,
     "truncated": 0,
     "unknown_zone": 0
   },
   "parse": {
-    "events": 110410,
+    "events": 110738,
     "unpaired_plans": 0,
     "unparseable_plans": 0,
     "ignored_lines": 2829
   },
-  "events": 110410,
+  "events": 110738,
   "events_by_kind": {
-    "query": 107134,
+    "query": 107458,
     "connection": 1048,
     "disconnection": 1048,
     "auth_failure": 733,
-    "query_error": 447
+    "query_error": 451
   },
   "users_with_history": 10,
   "windows_by_split": {
     "train": {
-      "windows": 9113,
-      "anomalous": 36,
-      "contamination_pct": 0.4
+      "windows": 9109,
+      "anomalous": 34,
+      "contamination_pct": 0.37
     },
     "validation": {
-      "windows": 4682,
-      "anomalous": 175,
-      "contamination_pct": 3.74
+      "windows": 4684,
+      "anomalous": 176,
+      "contamination_pct": 3.76
     },
     "test": {
-      "windows": 4640,
-      "anomalous": 319,
-      "contamination_pct": 6.88
+      "windows": 4662,
+      "anomalous": 337,
+      "contamination_pct": 7.23
     }
   },
   "anomalous_windows_by_type": {
@@ -78,58 +79,58 @@
       "validation": 15
     },
     "falha_auth": {
-      "test": 42,
-      "train": 7,
-      "validation": 27
+      "test": 44,
+      "train": 6,
+      "validation": 23
     },
     "fora_horario": {
-      "test": 111,
-      "train": 7,
+      "test": 107,
+      "train": 5,
       "validation": 68
     },
     "leitura_atipica": {
-      "test": 38,
+      "test": 49,
       "train": 0,
       "validation": 0
     },
     "rajada": {
-      "test": 44,
-      "train": 11,
-      "validation": 26
+      "test": 49,
+      "train": 12,
+      "validation": 27
     },
     "sem_permissao": {
-      "test": 36,
+      "test": 40,
       "train": 6,
-      "validation": 24
+      "validation": 27
     },
     "volume_alto": {
       "test": 24,
       "train": 4,
-      "validation": 15
+      "validation": 16
     }
   },
   "crosscheck": {
     "totals": {
       "executor": {
-        "comandos": 107581,
-        "comandos_com_erro": 447,
+        "comandos": 107909,
+        "comandos_com_erro": 451,
         "falhas_de_login": 733,
         "conexoes": 1048,
-        "linhas": 2744038
+        "linhas": 2743519
       },
       "sacla": {
-        "comandos": 107581,
-        "comandos_com_erro": 447,
+        "comandos": 107909,
+        "comandos_com_erro": 451,
         "falhas_de_login": 733,
         "conexoes": 1048,
-        "linhas": 2744038
+        "linhas": 2743519
       }
     },
     "differences": [],
     "passed": true
   },
   "timings_s": {
-    "leitura_e_eventos_s": 5.74,
-    "agregacao_s": 2.96
+    "leitura_e_eventos_s": 5.66,
+    "agregacao_s": 3.19
   }
 }

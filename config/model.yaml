@@ -1,0 +1,43 @@
+# Isolation Forest (único algoritmo do SACLA) e protocolo de avaliação.
+#
+# Protocolo: o modelo é treinado no split de treino (sem rótulos); hiperparâmetros e limiar de
+# score são escolhidos SÓ na validação; o teste é usado uma única vez, com a configuração
+# escolhida, repetida com várias sementes para medir a variação.
+
+# Atributos de contagem e volume que recebem log(1 + x) quando log1p está ligado.
+log1p_features: [n_commands, n_select, n_insert, n_update, n_delete, n_ddl, n_other, n_errors,
+                 n_permission_denied, n_auth_failures, n_connections, rows_returned_sum,
+                 rows_returned_max, rows_affected_sum, duration_mean_ms, duration_max_ms,
+                 duration_p95_ms, n_tables, n_ips]
+
+# Grade de hiperparâmetros (busca exaustiva na validação).
+grid:
+  n_estimators: [100, 200, 500]
+  max_samples: [256, 1024, 0.1]      # inteiro = amostras por árvore; fração = proporção do treino
+  max_features: [0.5, 0.75, 1.0]
+  log1p: [true, false]
+
+tuning_seeds: [0, 1, 2, 3, 4]        # média da validação sobre estas sementes
+evaluation_seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]   # repetições no teste (média e desvio)
+selection_metric: f1                 # F1 com o melhor limiar; desempate por pr_auc
+n_jobs: 1                            # mais rápido que paralelo neste tamanho de dados (medido)
+
+# Configuração sem rótulos: hiperparâmetros padrão do scikit-learn e limiar no quantil dos
+# scores do próprio treino (o que se faria sem nenhuma janela rotulada).
+label_free:
+  n_estimators: 100
+  max_samples: auto
+  max_features: 1.0
+  log1p: false
+  train_quantile: 0.99
+
+# Sensibilidade ao tamanho da janela (só na validação; a grade é refeita para cada tamanho).
+sensitivity_windows: [1, 5, 15]
+
+# Robustez: novas simulações (sementes de dados) avaliadas com a configuração congelada.
+robustness:
+  simulation_seeds: [7, 2026]
+  results_dir: results/robustez     # separado: reavaliar o experimento não apaga a robustez
+
+results_dir: results/experimentos
+models_dir: data/models              # modelos treinados (não versionados)

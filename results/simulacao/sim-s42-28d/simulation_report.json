@@ -1,30 +1,30 @@
 {
   "run_id": "sim-s42-28d",
   "schedule": {
-    "events": 110410,
+    "events": 110738,
     "events_by_kind": {
       "connect": 1048,
       "disconnect": 1048,
       "failed_login": 733,
-      "statement": 107581
+      "statement": 107909
     },
     "normal_statements": 104483,
     "statements_by_user": {
-      "analista_01": 1819,
-      "analista_02": 1884,
-      "atendente_01": 7590,
-      "atendente_02": 8395,
-      "atendente_03": 8398,
-      "atendente_04": 8929,
-      "gerente_01": 2993,
-      "gerente_02": 2463,
+      "analista_01": 1658,
+      "analista_02": 1658,
+      "atendente_01": 7726,
+      "atendente_02": 8701,
+      "atendente_03": 8349,
+      "atendente_04": 8839,
+      "gerente_01": 3163,
+      "gerente_02": 2596,
       "svc_batch": 140,
-      "svc_locadora": 64970
+      "svc_locadora": 65079
     },
-    "scenarios": 264,
+    "scenarios": 266,
     "scenarios_by_split": {
+      "test": 156,
       "validation": 90,
-      "test": 154,
       "train": 20
     },
     "scenarios_by_split_type_intensity": {
@@ -37,9 +37,9 @@
       "test/fora_horario/alta": 8,
       "test/fora_horario/baixa": 8,
       "test/fora_horario/media": 8,
-      "test/leitura_atipica/alta": 3,
+      "test/leitura_atipica/alta": 4,
       "test/leitura_atipica/baixa": 4,
-      "test/leitura_atipica/media": 3,
+      "test/leitura_atipica/media": 4,
       "test/rajada/alta": 8,
       "test/rajada/baixa": 8,
       "test/rajada/media": 8,
@@ -79,24 +79,24 @@
     }
   },
   "execution": {
-    "events": 110410,
-    "statements": 107581,
+    "events": 110738,
+    "statements": 107909,
     "statement_errors": {
-      "42501": 320,
+      "42501": 324,
       "42601": 127
     },
     "unexpected_errors": {},
     "failed_logins": 733,
     "unexpected_logins": 0,
-    "real_duration_s": 102.9,
-    "events_per_s": 1073.1
+    "real_duration_s": 100.6,
+    "events_per_s": 1101.3
   },
-  "raw_log_bytes": 434548908,
-  "retimed_bytes": 21276211,
-  "raw_gz_bytes": 20958490,
+  "raw_log_bytes": 427011802,
+  "retimed_bytes": 20971452,
+  "raw_gz_bytes": 20646949,
   "retime": {
-    "lines": 207177,
-    "client_lines": 207177,
+    "lines": 207769,
+    "client_lines": 207769,
     "sessions_mapped": {
       "marca": 1048,
       "pid": 0,
@@ -107,15 +107,15 @@
     "passed": true
   },
   "manifest_check": {
-    "scenarios": 264,
+    "scenarios": 266,
     "problems": 0,
     "examples": [],
     "passed": true
   },
   "timings_s": {
-    "agenda_s": 1.4,
-    "execucao_s": 103.5,
-    "coleta_s": 9.9,
-    "retime_s": 21.5
+    "agenda_s": 2.1,
+    "execucao_s": 101.2,
+    "coleta_s": 9.4,
+    "retime_s": 20.9
   }
 }

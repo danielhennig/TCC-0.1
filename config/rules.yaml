@@ -1,0 +1,18 @@
+# Baseline de regras simples, para responder: o Isolation Forest agrega algo além de regras
+# óbvias? NÃO é um segundo algoritmo de aprendizado: os limiares foram fixados antes de rodar a
+# avaliação, e as estatísticas por usuário vêm só do período de treino (sem rótulos).
+#
+# Uma janela é sinalizada se QUALQUER regra disparar.
+#   fixed:       atributo <op> valor
+#   user_stat:   atributo > multiplicador × estatística do usuário no treino (p99 ou max)
+#   unseen_hour: a hora local da janela nunca apareceu no histórico do usuário
+# As regras foram escritas pensando nos 6 tipos de anomalia conhecidos; o tipo inédito
+# (leitura_atipica) não tem regra própria, de propósito.
+
+rules:
+  - {name: falhas_autenticacao, kind: fixed, feature: n_auth_failures, op: ">=", value: 3}
+  - {name: erro_permissao, kind: fixed, feature: n_permission_denied, op: ">=", value: 1}
+  - {name: rajada, kind: user_stat, feature: n_commands, stat: p99, multiplier: 3}
+  - {name: volume, kind: user_stat, feature: rows_returned_sum, stat: max, multiplier: 1}
+  - {name: dml_volume, kind: user_stat, feature: rows_affected_sum, stat: max, multiplier: 1}
+  - {name: hora_inedita, kind: unseen_hour}

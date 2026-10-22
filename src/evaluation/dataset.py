@@ -6,6 +6,7 @@ Fluxo: retimed/*.json.gz → sacla.reader → sacla.events → sacla.features (h
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import time
@@ -23,6 +24,14 @@ from sacla.features import FEATURE_COLUMNS, build_features
 from sacla.reader import ReadReport, list_log_files, read_records
 
 log = logging.getLogger(__name__)
+
+
+def run_fingerprint(run_dir: Path) -> str:
+    """Impressão digital da execução (definição + ground truth): muda se a simulação for refeita."""
+    digest = hashlib.sha256()
+    for name in ("run.json", "manifest.csv"):
+        digest.update((run_dir / name).read_bytes())
+    return digest.hexdigest()
 
 
 def dataset_name(window_minutes: int) -> str:
@@ -67,6 +76,7 @@ def build_dataset(
     name = dataset_name(window)
     summary = {
         "run_id": run["run_id"],
+        "run_fingerprint": run_fingerprint(run_dir),
         "window_minutes": window,
         "history_end_utc": run["splits"]["train"]["end_utc"],
         "features": list(FEATURE_COLUMNS),

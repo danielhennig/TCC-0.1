@@ -1,0 +1,63 @@
+{
+  "lines": 204194,
+  "malformed_lines": 0,
+  "unparseable_plans": 0,
+  "client_lines": 204194,
+  "background_lines": 0,
+  "sessions_mapped": {
+    "marca": 1059,
+    "pid": 0,
+    "ordem_falha_login": 696
+  },
+  "session_conflicts": [],
+  "unmapped_client_lines": 0,
+  "failed_logins": {
+    "scheduled": 696,
+    "in_log": 696,
+    "problems": []
+  },
+  "statements": {
+    "executed": 105879,
+    "missing_duration_line": 0,
+    "missing_error_line": 0,
+    "examples": []
+  },
+  "rows_check": {
+    "compared": 92659,
+    "mismatches": 0,
+    "examples": []
+  },
+  "passed": true,
+  "order_violations": 0,
+  "output_files": [
+    "postgresql-20260302_000000.json.gz",
+    "postgresql-20260303_000000.json.gz",
+    "postgresql-20260304_000000.json.gz",
+    "postgresql-20260305_000000.json.gz",
+    "postgresql-20260306_000000.json.gz",
+    "postgresql-20260307_000000.json.gz",
+    "postgresql-20260308_000000.json.gz",
+    "postgresql-20260309_000000.json.gz",
+    "postgresql-20260310_000000.json.gz",
+    "postgresql-20260311_000000.json.gz",
+    "postgresql-20260312_000000.json.gz",
+    "postgresql-20260313_000000.json.gz",
+    "postgresql-20260314_000000.json.gz",
+    "postgresql-20260315_000000.json.gz",
+    "postgresql-20260316_000000.json.gz",
+    "postgresql-20260317_000000.json.gz",
+    "postgresql-20260318_000000.json.gz",
+    "postgresql-20260319_000000.json.gz",
+    "postgresql-20260320_000000.json.gz",
+    "postgresql-20260321_000000.json.gz",
+    "postgresql-20260322_000000.json.gz",
+    "postgresql-20260323_000000.json.gz",
+    "postgresql-20260324_000000.json.gz",
+    "postgresql-20260325_000000.json.gz",
+    "postgresql-20260326_000000.json.gz",
+    "postgresql-20260327_000000.json.gz",
+    "postgresql-20260328_000000.json.gz",
+    "postgresql-20260329_000000.json.gz",
+    "postgresql-20260330_000000.json.gz"
+  ]
+}
