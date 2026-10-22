@@ -122,6 +122,21 @@ def robustness(extra: list[str]) -> None:
     )
 
 
+def report(extra: list[str]) -> None:
+    """Relatório de anomalias do teste e figuras do experimento (ex.: --exp-id <pasta>)."""
+    run([*ANALYSIS, "python", "-m", "evaluation.cli", "report", *extra])
+
+
+def fit(extra: list[str]) -> None:
+    """SACLA (uso real): ajusta o detector com o log de um período normal (--logs --model)."""
+    run([*ANALYSIS, "python", "-m", "sacla.cli", "fit", *extra])
+
+
+def score(extra: list[str]) -> None:
+    """SACLA (uso real): analisa um período e gera o relatório (--logs --model --out)."""
+    run([*ANALYSIS, "python", "-m", "sacla.cli", "score", *extra])
+
+
 def _run_with_commit() -> list[str]:
     """`docker compose run` com o commit atual do git (a imagem não tem git)."""
     commit = _capture(["git", "rev-parse", "--short", "HEAD"]).strip()
@@ -182,6 +197,9 @@ TASKS: dict[str, Callable[[list[str]], None]] = {
     "features": features,
     "evaluate": evaluate,
     "robustness": robustness,
+    "report": report,
+    "fit": fit,
+    "score": score,
     "test": test,
     "lint": lint,
     "fmt": fmt,
@@ -195,7 +213,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="\n".join(f"  {name:<6} {fn.__doc__}" for name, fn in TASKS.items()),
+        epilog="\n".join(
+            f"  {name:<10} {(fn.__doc__ or '').strip().splitlines()[0]}"
+            for name, fn in TASKS.items()
+        ),
     )
     parser.add_argument("task", choices=TASKS)
     args, extra = parser.parse_known_args()

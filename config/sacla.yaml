@@ -29,3 +29,41 @@ features:
   # Piso do desvio robusto (1,4826 x MAD) para o z-score, evitando divisão por ~0 em usuários
   # muito regulares.
   robust_scale_floor: 1.0
+
+# Detector (módulo 3) para o uso real: `sacla fit` e `sacla score`. A avaliação (Fase 4) usa
+# a mesma lista log1p_features, mas escolhe hiperparâmetros e limiar em config/model.yaml.
+detector:
+  # Atributos de contagem e volume que recebem log(1 + x) quando log1p está ligado.
+  log1p_features: [n_commands, n_select, n_insert, n_update, n_delete, n_ddl, n_other, n_errors,
+                   n_permission_denied, n_auth_failures, n_connections, rows_returned_sum,
+                   rows_returned_max, rows_affected_sum, duration_mean_ms, duration_max_ms,
+                   duration_p95_ms, n_tables, n_ips]
+  # Configuração escolhida na validação da Fase 4 (docs/decisoes.md, D38).
+  n_estimators: 500
+  max_samples: 1024
+  max_features: 0.5
+  log1p: true
+  seed: 0
+  n_jobs: 1
+  # Sem rótulos no uso real, o limiar sai do próprio histórico: o score acima do qual fica esta
+  # fração das janelas do treino. 0,0144 é a fração que o limiar escolhido na validação da
+  # Fase 4 (semente 0) produz no treino (docs/decisoes.md, D40).
+  train_alert_rate: 0.0144
+
+# Relatório de anomalias (módulo 4).
+report:
+  # Atributos considerados na explicação de cada alerta (comparados ao histórico do usuário).
+  # Ficam de fora: hora em seno/cosseno (a raridade da hora já resume) e os z robustos
+  # (redundantes com as contagens comparadas ao histórico).
+  explain_features: [n_commands, n_select, n_insert, n_update, n_delete, n_ddl, n_other,
+                     n_errors, n_permission_denied, n_auth_failures, n_connections,
+                     rows_returned_sum, rows_returned_max, rows_affected_sum, duration_max_ms,
+                     n_tables, n_ips, hour_surprisal, weekend, new_tables_frac, new_ips_frac,
+                     new_query_shapes_frac]
+  top_features: 3                  # atributos mostrados por alerta
+  # Só entra na explicação o atributo cujo valor é atingido por no máximo esta fração das
+  # janelas do histórico do usuário (cauda superior).
+  max_tail_fraction: 0.05
+  # Alertas do mesmo usuário separados por até este número de janelas formam um episódio.
+  episode_gap_windows: 1
+  max_html_episodes: 300           # episódios listados no HTML (o CSV tem todos)

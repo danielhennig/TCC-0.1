@@ -26,7 +26,8 @@ O SACLA *auxilia* a identificação; nunca classifica algo como ataque.
 `setup` (recria tudo do zero) · `reset` · `smoke` · `bench` · `simulate [--days N --seed S]`
 (recria banco e logs e roda a simulação) · `retime` · `features [--window N --run-id ID]`
 (conjunto rotulado em `data/features/`) · `evaluate` (resultados em `results/experimentos/`)
-· `robustness --exp-id ID` · `test` · `lint` · `fmt` · `lock` · `psql`
+· `robustness --exp-id ID` · `report` (relatório do teste e figuras) · `fit`/`score` (SACLA
+no uso real, sem rótulos) · `test` · `lint` · `fmt` · `lock` · `psql`
 · `shell`. Tudo roda nos containers do `docker-compose.yml`; o Docker Desktop precisa estar
 ligado. Não rode outro comando que use o banco enquanto um `simulate` estiver recriando-o;
 testes, lint, `features` e `evaluate` usam o serviço `analise` (sem IPs fixos) e podem rodar em

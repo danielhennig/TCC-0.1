@@ -1,0 +1,3050 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SACLA — relatório de acessos atípicos (sim-s42-28d, período de teste)</title>
+<style>
+  :root {
+    --bg: #ffffff; --surface: #f6f7f9; --text: #1d2330; --muted: #5b6475;
+    --border: #d9dde5; --accent: #2a5bd7; --warn-bg: #fff6e0; --warn-border: #e2b440;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171d; --surface: #1d222b; --text: #e6e9ef; --muted: #a3abba;
+      --border: #333a47; --accent: #7aa2ff; --warn-bg: #2d2615; --warn-border: #8a6d1f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  h2 { font-size: 1.2rem; margin: 32px 0 8px; }
+  .muted { color: var(--muted); }
+  .notice {
+    background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: 8px;
+    padding: 10px 14px; margin: 16px 0;
+  }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+  .stat b { display: block; font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  th, td { padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  th { background: var(--surface); position: sticky; top: 0; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  ul.why { margin: 0; padding-left: 18px; }
+  details summary { cursor: pointer; color: var(--accent); }
+  details table { margin-top: 6px; font-size: 0.85rem; }
+  code { font-size: 0.85em; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 16px; }
+  dt { color: var(--muted); }
+  dd { margin: 0; }
+  @media print { th { position: static; } details { display: block; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>SACLA — relatório de acessos atípicos (sim-s42-28d, período de teste)</h1>
+  <div class="muted">Período analisado: 23/03/2026 00:00 a 30/03/2026 00:00 (America/Sao_Paulo) · janelas de 5 min</div>
+
+  <p class="notice">O SACLA auxilia a identificação de acessos anômalos: cada alerta indica comportamento atípico para aquele usuário em relação ao próprio histórico, não um ataque. A decisão é de quem analisa.</p>
+
+  <div class="stats">
+    <div class="stat"><span class="muted">Janelas analisadas</span><b>4.662</b></div>
+    <div class="stat"><span class="muted">Usuários</span><b>10</b></div>
+    <div class="stat"><span class="muted">Janelas sinalizadas</span><b>233</b></div>
+    <div class="stat"><span class="muted">Episódios</span><b>158</b></div>
+    <div class="stat"><span class="muted">Usuários com alerta</span><b>10</b></div>
+  </div>
+
+  <h2>Como ler</h2>
+  <ul>
+    <li><b>Score</b>: grau de anomalia dado pelo Isolation Forest (maior = mais atípico). Uma janela é sinalizada quando o score passa do limiar (0,5547; escolhido na validação (melhor F1), semente 0 do experimento).</li>
+    <li><b>Posição</b>: ordem da janela entre todas as janelas analisadas, da mais atípica (1) para a menos.</li>
+    <li><b>Principais desvios</b>: atributos da janela mais raros no histórico do próprio usuário. Descrevem o que mais foge do normal dele; não são a "razão interna" do modelo.</li>
+    <li><b>Episódio</b>: janelas sinalizadas seguidas do mesmo usuário, examinadas juntas.</li>
+  </ul>
+
+  <h2>Usuários</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Usuário</th><th class="n">Janelas</th><th class="n">Janelas sinalizadas</th><th class="n">Episódios</th><th class="n">Janelas no histórico</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>analista_02</td>
+        <td class="n">322</td>
+        <td class="n">34</td>
+        <td class="n">16</td>
+        <td class="n">539</td>
+      </tr>
+      <tr>
+        <td>atendente_01</td>
+        <td class="n">415</td>
+        <td class="n">29</td>
+        <td class="n">18</td>
+        <td class="n">771</td>
+      </tr>
+      <tr>
+        <td>gerente_01</td>
+        <td class="n">311</td>
+        <td class="n">29</td>
+        <td class="n">17</td>
+        <td class="n">681</td>
+      </tr>
+      <tr>
+        <td>svc_locadora</td>
+        <td class="n">1.788</td>
+        <td class="n">29</td>
+        <td class="n">26</td>
+        <td class="n">3.520</td>
+      </tr>
+      <tr>
+        <td>analista_01</td>
+        <td class="n">282</td>
+        <td class="n">25</td>
+        <td class="n">15</td>
+        <td class="n">532</td>
+      </tr>
+      <tr>
+        <td>gerente_02</td>
+        <td class="n">330</td>
+        <td class="n">25</td>
+        <td class="n">17</td>
+        <td class="n">674</td>
+      </tr>
+      <tr>
+        <td>atendente_04</td>
+        <td class="n">410</td>
+        <td class="n">23</td>
+        <td class="n">17</td>
+        <td class="n">791</td>
+      </tr>
+      <tr>
+        <td>atendente_02</td>
+        <td class="n">393</td>
+        <td class="n">22</td>
+        <td class="n">18</td>
+        <td class="n">806</td>
+      </tr>
+      <tr>
+        <td>atendente_03</td>
+        <td class="n">403</td>
+        <td class="n">9</td>
+        <td class="n">7</td>
+        <td class="n">773</td>
+      </tr>
+      <tr>
+        <td>svc_batch</td>
+        <td class="n">8</td>
+        <td class="n">8</td>
+        <td class="n">7</td>
+        <td class="n">22</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Episódios, do mais atípico ao menos atípico</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr>
+      <th class="n">#</th><th>Usuário</th><th>Início → fim</th><th class="n">Score máx.</th><th class="n">Posição</th>
+      <th>Principais desvios (janela de maior score)</th><th>Resumo</th>
+    </tr></thead>
+    <tbody>
+      <tr>
+        <td class="n">124</td>
+        <td>svc_batch</td>
+        <td class="n">28/03/2026 02:00 → 28/03/2026 02:05</td>
+        <td class="n">0,735</td>
+        <td class="n">1</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 4.290 (acima do máximo do histórico; mediana 1.826, máximo 4.014)</li><li>linhas retornadas (máx.): 3.233 (acima do máximo do histórico; mediana 998, máximo 3.112)</li></ul>
+        </td>
+        <td>
+          5 comandos
+          (3 SELECT, 0 INSERT, 1 UPDATE, 0 DELETE)<br>
+          4.290 linhas retornadas · 200 afetadas<br>
+<span class="muted">tabelas:</span> customer, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">142</td>
+        <td>svc_batch</td>
+        <td class="n">29/03/2026 01:55 → 29/03/2026 02:00</td>
+        <td class="n">0,735</td>
+        <td class="n">2</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 4.591 (acima do máximo do histórico; mediana 1.826, máximo 4.014)</li><li>linhas retornadas (máx.): 3.473 (acima do máximo do histórico; mediana 998, máximo 3.112)</li></ul>
+        </td>
+        <td>
+          5 comandos
+          (3 SELECT, 0 INSERT, 1 UPDATE, 0 DELETE)<br>
+          4.591 linhas retornadas · 200 afetadas<br>
+<span class="muted">tabelas:</span> customer, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">43</td>
+        <td>svc_batch</td>
+        <td class="n">25/03/2026 02:00 → 25/03/2026 02:05</td>
+        <td class="n">0,729</td>
+        <td class="n">3</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 4.347 (acima do máximo do histórico; mediana 1.826, máximo 4.014)</li><li>linhas retornadas (máx.): 3.228 (acima do máximo do histórico; mediana 998, máximo 3.112)</li></ul>
+        </td>
+        <td>
+          5 comandos
+          (3 SELECT, 0 INSERT, 1 UPDATE, 0 DELETE)<br>
+          4.347 linhas retornadas · 200 afetadas<br>
+<span class="muted">tabelas:</span> customer, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">71</td>
+        <td>svc_batch</td>
+        <td class="n">26/03/2026 01:55 → 26/03/2026 02:00</td>
+        <td class="n">0,729</td>
+        <td class="n">4</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 4.619 (acima do máximo do histórico; mediana 1.826, máximo 4.014)</li><li>linhas retornadas (máx.): 3.531 (acima do máximo do histórico; mediana 998, máximo 3.112)</li></ul>
+        </td>
+        <td>
+          5 comandos
+          (3 SELECT, 0 INSERT, 1 UPDATE, 0 DELETE)<br>
+          4.619 linhas retornadas · 200 afetadas<br>
+<span class="muted">tabelas:</span> customer, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">2</td>
+        <td>svc_batch</td>
+        <td class="n">23/03/2026 02:00 → 23/03/2026 02:05</td>
+        <td class="n">0,728</td>
+        <td class="n">5</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 4.346 (acima do máximo do histórico; mediana 1.826, máximo 4.014)</li><li>linhas retornadas (máx.): 3.289 (acima do máximo do histórico; mediana 998, máximo 3.112)</li></ul>
+        </td>
+        <td>
+          5 comandos
+          (3 SELECT, 0 INSERT, 1 UPDATE, 0 DELETE)<br>
+          4.346 linhas retornadas · 200 afetadas<br>
+<span class="muted">tabelas:</span> customer, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">23</td>
+        <td>svc_batch</td>
+        <td class="n">24/03/2026 01:55 → 24/03/2026 02:00</td>
+        <td class="n">0,727</td>
+        <td class="n">6</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 4.339 (acima do máximo do histórico; mediana 1.826, máximo 4.014)</li><li>linhas retornadas (máx.): 3.251 (acima do máximo do histórico; mediana 998, máximo 3.112)</li></ul>
+        </td>
+        <td>
+          5 comandos
+          (3 SELECT, 0 INSERT, 1 UPDATE, 0 DELETE)<br>
+          4.339 linhas retornadas · 200 afetadas<br>
+<span class="muted">tabelas:</span> customer, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">123</td>
+        <td>svc_locadora</td>
+        <td class="n">28/03/2026 01:00 → 28/03/2026 01:05</td>
+        <td class="n">0,705</td>
+        <td class="n">7</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 112.507 (acima do máximo do histórico; mediana 61, máximo 10.072)</li><li>duração máx. (ms): 61,0 (acima do máximo do histórico; mediana 0,5, máximo 7,3)</li><li>linhas retornadas (máx.): 57.672 (acima do máximo do histórico; mediana 24, máximo 10.000)</li></ul>
+        </td>
+        <td>
+          3 comandos
+          (3 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          112.507 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> film, film_category, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">93</td>
+        <td>svc_batch</td>
+        <td class="n">27/03/2026 02:00 → 27/03/2026 02:10</td>
+        <td class="n">0,697</td>
+        <td class="n">8</td>
+        <td>
+          <ul class="why"><li>nenhum atributo isolado fora do padrão do usuário; a combinação de valores é que é incomum</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">27/03/2026 02:00</td><td class="n">0,619</td><td>linhas retornadas (máx.): 3.241 (acima do máximo do histórico; mediana 998, máximo 3.112)</td></tr>
+                <tr><td class="n">27/03/2026 02:05</td><td class="n">0,697</td><td>nenhum atributo isolado fora do padrão do usuário; a combinação de valores é que é incomum</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          5 comandos
+          (3 SELECT, 0 INSERT, 1 UPDATE, 0 DELETE)<br>
+          4.359 linhas retornadas · 200 afetadas<br>
+<span class="muted">tabelas:</span> customer, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">94</td>
+        <td>gerente_01</td>
+        <td class="n">27/03/2026 04:15 → 27/03/2026 04:40</td>
+        <td class="n">0,683</td>
+        <td class="n">9</td>
+        <td>
+          <ul class="why"><li>comandos: 19 (acima do máximo do histórico; mediana 2, máximo 8)</li><li>linhas retornadas (soma): 237 (acima do máximo do histórico; mediana 10, máximo 113)</li><li>SELECT: 16 (acima do máximo do histórico; mediana 1, máximo 8)</li></ul>
+          <details>
+            <summary>5 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">27/03/2026 04:15</td><td class="n">0,602</td><td>horário incomum para o usuário: 04h (0,0% das janelas do histórico) | conexões: 1 (atingido em só 3,2% das janelas do histórico; mediana 0, máximo 1)</td></tr>
+                <tr><td class="n">27/03/2026 04:20</td><td class="n">0,665</td><td>linhas retornadas (soma): 271 (acima do máximo do histórico; mediana 10, máximo 113) | comandos: 15 (acima do máximo do histórico; mediana 2, máximo 8) | SELECT: 13 (acima do máximo do histórico; mediana 1, máximo 8)</td></tr>
+                <tr><td class="n">27/03/2026 04:25</td><td class="n">0,663</td><td>comandos: 16 (acima do máximo do histórico; mediana 2, máximo 8) | SELECT: 12 (acima do máximo do histórico; mediana 1, máximo 8) | horário incomum para o usuário: 04h (0,0% das janelas do histórico)</td></tr>
+                <tr><td class="n">27/03/2026 04:30</td><td class="n">0,683</td><td>comandos: 19 (acima do máximo do histórico; mediana 2, máximo 8) | linhas retornadas (soma): 237 (acima do máximo do histórico; mediana 10, máximo 113) | SELECT: 16 (acima do máximo do histórico; mediana 1, máximo 8)</td></tr>
+                <tr><td class="n">27/03/2026 04:35</td><td class="n">0,580</td><td>horário incomum para o usuário: 04h (0,0% das janelas do histórico) | comandos: 8 (atingido em só 0,1% das janelas do histórico; mediana 2, máximo 8) | SELECT: 7 (atingido em só 0,1% das janelas do histórico; mediana 1, máximo 8)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          60 comandos
+          (49 SELECT, 0 INSERT, 11 UPDATE, 0 DELETE)<br>
+          663 linhas retornadas · 11 afetadas<br>
+<span class="muted">tabelas:</span> address, city, customer, film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">30</td>
+        <td>gerente_02</td>
+        <td class="n">24/03/2026 12:00 → 24/03/2026 12:10</td>
+        <td class="n">0,681</td>
+        <td class="n">10</td>
+        <td>
+          <ul class="why"><li>UPDATE: 7 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 7)</li><li>comandos com erro: 10 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 13)</li><li>erros de permissão: 10 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 13)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">24/03/2026 12:00</td><td class="n">0,681</td><td>UPDATE: 7 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 7) | comandos com erro: 10 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 13) | erros de permissão: 10 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 13)</td></tr>
+                <tr><td class="n">24/03/2026 12:05</td><td class="n">0,589</td><td>comandos com erro: 3 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 13) | erros de permissão: 3 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 13) | DELETE: 1 (atingido em só 1,8% das janelas do histórico; mediana 0, máximo 7)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          15 comandos
+          (2 SELECT, 0 INSERT, 9 UPDATE, 4 DELETE)<br>
+          2 linhas retornadas · 0 afetadas<br>
+13 erros (13 de permissão)<br><span class="muted">tabelas:</span> address, city, customer, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">102</td>
+        <td>gerente_02</td>
+        <td class="n">27/03/2026 12:50 → 27/03/2026 13:00</td>
+        <td class="n">0,680</td>
+        <td class="n">11</td>
+        <td>
+          <ul class="why"><li>UPDATE: 8 (acima do máximo do histórico; mediana 0, máximo 7)</li><li>comandos com erro: 10 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 13)</li><li>erros de permissão: 10 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 13)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">27/03/2026 12:50</td><td class="n">0,653</td><td>UPDATE: 4 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 7) | comandos com erro: 5 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 13) | erros de permissão: 5 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 13)</td></tr>
+                <tr><td class="n">27/03/2026 12:55</td><td class="n">0,680</td><td>UPDATE: 8 (acima do máximo do histórico; mediana 0, máximo 7) | comandos com erro: 10 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 13) | erros de permissão: 10 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 13)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          15 comandos
+          (0 SELECT, 0 INSERT, 12 UPDATE, 3 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+15 erros (15 de permissão)<br><span class="muted">tabelas:</span> payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">34</td>
+        <td>gerente_01</td>
+        <td class="n">24/03/2026 13:20 → 24/03/2026 13:30</td>
+        <td class="n">0,675</td>
+        <td class="n">12</td>
+        <td>
+          <ul class="why"><li>erros de permissão: 12 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>comandos com erro: 12 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>DELETE: 6 (acima do máximo do histórico; mediana 0, máximo 1)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">24/03/2026 13:20</td><td class="n">0,617</td><td>erros de permissão: 3 (acima do máximo do histórico; mediana 0, máximo 0) | comandos com erro: 3 (acima do máximo do histórico; mediana 0, máximo 1) | DELETE: 2 (acima do máximo do histórico; mediana 0, máximo 1)</td></tr>
+                <tr><td class="n">24/03/2026 13:25</td><td class="n">0,675</td><td>erros de permissão: 12 (acima do máximo do histórico; mediana 0, máximo 0) | comandos com erro: 12 (acima do máximo do histórico; mediana 0, máximo 1) | DELETE: 6 (acima do máximo do histórico; mediana 0, máximo 1)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          16 comandos
+          (0 SELECT, 0 INSERT, 8 UPDATE, 8 DELETE)<br>
+          0 linhas retornadas · 1 afetadas<br>
+15 erros (15 de permissão)<br><span class="muted">tabelas:</span> film, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">4</td>
+        <td>gerente_01</td>
+        <td class="n">23/03/2026 06:00 → 23/03/2026 06:25</td>
+        <td class="n">0,672</td>
+        <td class="n">13</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 06h (0,0% das janelas do histórico)</li><li>comandos: 9 (acima do máximo do histórico; mediana 2, máximo 8)</li><li>linhas afetadas: 3 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 3)</li></ul>
+          <details>
+            <summary>5 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">23/03/2026 06:00</td><td class="n">0,646</td><td>horário incomum para o usuário: 06h (0,0% das janelas do histórico) | comandos: 11 (acima do máximo do histórico; mediana 2, máximo 8) | SELECT: 11 (acima do máximo do histórico; mediana 1, máximo 8)</td></tr>
+                <tr><td class="n">23/03/2026 06:05</td><td class="n">0,619</td><td>linhas retornadas (soma): 223 (acima do máximo do histórico; mediana 10, máximo 113) | comandos: 13 (acima do máximo do histórico; mediana 2, máximo 8) | SELECT: 13 (acima do máximo do histórico; mediana 1, máximo 8)</td></tr>
+                <tr><td class="n">23/03/2026 06:10</td><td class="n">0,648</td><td>comandos: 12 (acima do máximo do histórico; mediana 2, máximo 8) | horário incomum para o usuário: 06h (0,0% das janelas do histórico) | linhas retornadas (soma): 138 (acima do máximo do histórico; mediana 10, máximo 113)</td></tr>
+                <tr><td class="n">23/03/2026 06:15</td><td class="n">0,646</td><td>comandos: 15 (acima do máximo do histórico; mediana 2, máximo 8) | SELECT: 14 (acima do máximo do histórico; mediana 1, máximo 8) | linhas retornadas (soma): 184 (acima do máximo do histórico; mediana 10, máximo 113)</td></tr>
+                <tr><td class="n">23/03/2026 06:20</td><td class="n">0,672</td><td>horário incomum para o usuário: 06h (0,0% das janelas do histórico) | comandos: 9 (acima do máximo do histórico; mediana 2, máximo 8) | linhas afetadas: 3 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 3)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          60 comandos
+          (53 SELECT, 0 INSERT, 6 UPDATE, 1 DELETE)<br>
+          718 linhas retornadas · 7 afetadas<br>
+<span class="muted">tabelas:</span> address, city, customer, film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">127</td>
+        <td>svc_locadora</td>
+        <td class="n">28/03/2026 06:35 → 28/03/2026 06:40</td>
+        <td class="n">0,669</td>
+        <td class="n">14</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 112.487 (acima do máximo do histórico; mediana 61, máximo 10.072)</li><li>duração máx. (ms): 61,9 (acima do máximo do histórico; mediana 0,5, máximo 7,3)</li><li>linhas retornadas (máx.): 57.674 (acima do máximo do histórico; mediana 24, máximo 10.000)</li></ul>
+        </td>
+        <td>
+          3 comandos
+          (3 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          112.487 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> inventory, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">139</td>
+        <td>atendente_01</td>
+        <td class="n">28/03/2026 22:05 → 28/03/2026 22:15</td>
+        <td class="n">0,668</td>
+        <td class="n">15</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 22h (0,0% das janelas do histórico)</li><li>comandos: 17 (acima do máximo do histórico; mediana 4, máximo 14)</li><li>linhas afetadas: 8 (atingido em só 0,1% das janelas do histórico; mediana 1, máximo 8)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">28/03/2026 22:05</td><td class="n">0,668</td><td>horário incomum para o usuário: 22h (0,0% das janelas do histórico) | comandos: 17 (acima do máximo do histórico; mediana 4, máximo 14) | linhas afetadas: 8 (atingido em só 0,1% das janelas do histórico; mediana 1, máximo 8)</td></tr>
+                <tr><td class="n">28/03/2026 22:10</td><td class="n">0,591</td><td>horário incomum para o usuário: 22h (0,0% das janelas do histórico) | comandos: 15 (acima do máximo do histórico; mediana 4, máximo 14) | SELECT: 12 (atingido em só 0,4% das janelas do histórico; mediana 3, máximo 14)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          32 comandos
+          (21 SELECT, 6 INSERT, 5 UPDATE, 0 DELETE)<br>
+          159 linhas retornadas · 11 afetadas<br>
+<span class="muted">tabelas:</span> address, category, city, customer, film, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">88</td>
+        <td>gerente_01</td>
+        <td class="n">26/03/2026 17:00 → 26/03/2026 17:10</td>
+        <td class="n">0,666</td>
+        <td class="n">16</td>
+        <td>
+          <ul class="why"><li>erros de permissão: 8 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>comandos com erro: 8 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>DELETE: 5 (acima do máximo do histórico; mediana 0, máximo 1)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">26/03/2026 17:00</td><td class="n">0,666</td><td>erros de permissão: 8 (acima do máximo do histórico; mediana 0, máximo 0) | comandos com erro: 8 (acima do máximo do histórico; mediana 0, máximo 1) | DELETE: 5 (acima do máximo do histórico; mediana 0, máximo 1)</td></tr>
+                <tr><td class="n">26/03/2026 17:05</td><td class="n">0,620</td><td>erros de permissão: 7 (acima do máximo do histórico; mediana 0, máximo 0) | comandos com erro: 7 (acima do máximo do histórico; mediana 0, máximo 1) | DELETE: 5 (acima do máximo do histórico; mediana 0, máximo 1)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          20 comandos
+          (5 SELECT, 0 INSERT, 5 UPDATE, 10 DELETE)<br>
+          82 linhas retornadas · 0 afetadas<br>
+15 erros (15 de permissão)<br><span class="muted">tabelas:</span> address, city, customer, film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">134</td>
+        <td>atendente_01</td>
+        <td class="n">28/03/2026 12:15 → 28/03/2026 12:35</td>
+        <td class="n">0,666</td>
+        <td class="n">17</td>
+        <td>
+          <ul class="why"><li>comandos: 67 (acima do máximo do histórico; mediana 4, máximo 14)</li><li>linhas afetadas: 25 (acima do máximo do histórico; mediana 1, máximo 8)</li><li>SELECT: 42 (acima do máximo do histórico; mediana 3, máximo 14)</li></ul>
+          <details>
+            <summary>4 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">28/03/2026 12:15</td><td class="n">0,565</td><td>conexões: 1 (atingido em só 2,5% das janelas do histórico; mediana 0, máximo 1)</td></tr>
+                <tr><td class="n">28/03/2026 12:20</td><td class="n">0,574</td><td>comandos: 24 (acima do máximo do histórico; mediana 4, máximo 14) | INSERT: 10 (acima do máximo do histórico; mediana 0, máximo 8) | linhas afetadas: 10 (acima do máximo do histórico; mediana 1, máximo 8)</td></tr>
+                <tr><td class="n">28/03/2026 12:25</td><td class="n">0,666</td><td>comandos: 67 (acima do máximo do histórico; mediana 4, máximo 14) | linhas afetadas: 25 (acima do máximo do histórico; mediana 1, máximo 8) | SELECT: 42 (acima do máximo do histórico; mediana 3, máximo 14)</td></tr>
+                <tr><td class="n">28/03/2026 12:30</td><td class="n">0,625</td><td>comandos: 26 (acima do máximo do histórico; mediana 4, máximo 14) | SELECT: 17 (acima do máximo do histórico; mediana 3, máximo 14) | linhas afetadas: 9 (acima do máximo do histórico; mediana 1, máximo 8)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          117 comandos
+          (73 SELECT, 32 INSERT, 12 UPDATE, 0 DELETE)<br>
+          513 linhas retornadas · 44 afetadas<br>
+<span class="muted">tabelas:</span> address, category, city, customer, film, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">25</td>
+        <td>analista_02</td>
+        <td class="n">24/03/2026 05:25 → 24/03/2026 05:40</td>
+        <td class="n">0,662</td>
+        <td class="n">20</td>
+        <td>
+          <ul class="why"><li>comandos: 5 (atingido em só 0,4% das janelas do histórico; mediana 1, máximo 5)</li><li>SELECT: 5 (atingido em só 0,4% das janelas do histórico; mediana 1, máximo 5)</li><li>horário incomum para o usuário: 05h (0,4% das janelas do histórico)</li></ul>
+          <details>
+            <summary>3 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">24/03/2026 05:25</td><td class="n">0,662</td><td>comandos: 5 (atingido em só 0,4% das janelas do histórico; mediana 1, máximo 5) | SELECT: 5 (atingido em só 0,4% das janelas do histórico; mediana 1, máximo 5) | horário incomum para o usuário: 05h (0,4% das janelas do histórico)</td></tr>
+                <tr><td class="n">24/03/2026 05:30</td><td class="n">0,598</td><td>comandos: 6 (acima do máximo do histórico; mediana 1, máximo 5) | SELECT: 6 (acima do máximo do histórico; mediana 1, máximo 5) | horário incomum para o usuário: 05h (0,4% das janelas do histórico)</td></tr>
+                <tr><td class="n">24/03/2026 05:35</td><td class="n">0,642</td><td>comandos: 6 (acima do máximo do histórico; mediana 1, máximo 5) | SELECT: 6 (acima do máximo do histórico; mediana 1, máximo 5) | horário incomum para o usuário: 05h (0,4% das janelas do histórico)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          17 comandos
+          (17 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          705 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> actor, category, film, film_actor, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">67</td>
+        <td>gerente_02</td>
+        <td class="n">25/03/2026 22:20 → 25/03/2026 22:45</td>
+        <td class="n">0,661</td>
+        <td class="n">21</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 276 (acima do máximo do histórico; mediana 10, máximo 111)</li><li>linhas afetadas: 4 (acima do máximo do histórico; mediana 0, máximo 2)</li><li>SELECT: 13 (acima do máximo do histórico; mediana 1, máximo 7)</li></ul>
+          <details>
+            <summary>5 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">25/03/2026 22:20</td><td class="n">0,605</td><td>horário incomum para o usuário: 22h (0,0% das janelas do histórico) | duração máx. (ms): 18,3 (atingido em só 0,7% das janelas do histórico; mediana 2,8, máximo 30,3) | conexões: 1 (atingido em só 2,8% das janelas do histórico; mediana 0, máximo 1)</td></tr>
+                <tr><td class="n">25/03/2026 22:25</td><td class="n">0,658</td><td>linhas retornadas (soma): 370 (acima do máximo do histórico; mediana 10, máximo 111) | SELECT: 15 (acima do máximo do histórico; mediana 1, máximo 7) | linhas afetadas: 3 (acima do máximo do histórico; mediana 0, máximo 2)</td></tr>
+                <tr><td class="n">25/03/2026 22:30</td><td class="n">0,661</td><td>linhas retornadas (soma): 276 (acima do máximo do histórico; mediana 10, máximo 111) | linhas afetadas: 4 (acima do máximo do histórico; mediana 0, máximo 2) | SELECT: 13 (acima do máximo do histórico; mediana 1, máximo 7)</td></tr>
+                <tr><td class="n">25/03/2026 22:35</td><td class="n">0,626</td><td>SELECT: 13 (acima do máximo do histórico; mediana 1, máximo 7) | horário incomum para o usuário: 22h (0,0% das janelas do histórico) | comandos: 14 (atingido em só 0,1% das janelas do histórico; mediana 2, máximo 14)</td></tr>
+                <tr><td class="n">25/03/2026 22:40</td><td class="n">0,633</td><td>horário incomum para o usuário: 22h (0,0% das janelas do histórico) | SELECT: 8 (acima do máximo do histórico; mediana 1, máximo 7) | comandos: 10 (atingido em só 0,1% das janelas do histórico; mediana 2, máximo 14)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          60 comandos
+          (50 SELECT, 0 INSERT, 10 UPDATE, 0 DELETE)<br>
+          829 linhas retornadas · 10 afetadas<br>
+<span class="muted">tabelas:</span> address, city, customer, film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">53</td>
+        <td>atendente_02</td>
+        <td class="n">25/03/2026 11:20 → 25/03/2026 11:25</td>
+        <td class="n">0,659</td>
+        <td class="n">22</td>
+        <td>
+          <ul class="why"><li>comandos: 74 (acima do máximo do histórico; mediana 4, máximo 18)</li><li>SELECT: 53 (acima do máximo do histórico; mediana 2, máximo 17)</li><li>linhas afetadas: 21 (acima do máximo do histórico; mediana 1, máximo 8)</li></ul>
+        </td>
+        <td>
+          74 comandos
+          (53 SELECT, 18 INSERT, 3 UPDATE, 0 DELETE)<br>
+          361 linhas retornadas · 21 afetadas<br>
+<span class="muted">tabelas:</span> address, category, city, customer, film, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">40</td>
+        <td>analista_02</td>
+        <td class="n">24/03/2026 21:50 → 24/03/2026 22:20</td>
+        <td class="n">0,659</td>
+        <td class="n">23</td>
+        <td>
+          <ul class="why"><li>comandos: 9 (acima do máximo do histórico; mediana 1, máximo 5)</li><li>SELECT: 9 (acima do máximo do histórico; mediana 1, máximo 5)</li><li>horário incomum para o usuário: 22h (0,0% das janelas do histórico)</li></ul>
+          <details>
+            <summary>6 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">24/03/2026 21:50</td><td class="n">0,622</td><td>comandos: 9 (acima do máximo do histórico; mediana 1, máximo 5) | SELECT: 9 (acima do máximo do histórico; mediana 1, máximo 5) | horário incomum para o usuário: 21h (0,0% das janelas do histórico)</td></tr>
+                <tr><td class="n">24/03/2026 21:55</td><td class="n">0,628</td><td>comandos: 8 (acima do máximo do histórico; mediana 1, máximo 5) | SELECT: 8 (acima do máximo do histórico; mediana 1, máximo 5) | horário incomum para o usuário: 21h (0,0% das janelas do histórico)</td></tr>
+                <tr><td class="n">24/03/2026 22:00</td><td class="n">0,637</td><td>comandos: 11 (acima do máximo do histórico; mediana 1, máximo 5) | SELECT: 11 (acima do máximo do histórico; mediana 1, máximo 5) | horário incomum para o usuário: 22h (0,0% das janelas do histórico)</td></tr>
+                <tr><td class="n">24/03/2026 22:05</td><td class="n">0,644</td><td>comandos: 9 (acima do máximo do histórico; mediana 1, máximo 5) | SELECT: 9 (acima do máximo do histórico; mediana 1, máximo 5) | horário incomum para o usuário: 22h (0,0% das janelas do histórico)</td></tr>
+                <tr><td class="n">24/03/2026 22:10</td><td class="n">0,613</td><td>comandos: 10 (acima do máximo do histórico; mediana 1, máximo 5) | SELECT: 10 (acima do máximo do histórico; mediana 1, máximo 5) | horário incomum para o usuário: 22h (0,0% das janelas do histórico)</td></tr>
+                <tr><td class="n">24/03/2026 22:15</td><td class="n">0,659</td><td>comandos: 9 (acima do máximo do histórico; mediana 1, máximo 5) | SELECT: 9 (acima do máximo do histórico; mediana 1, máximo 5) | horário incomum para o usuário: 22h (0,0% das janelas do histórico)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          56 comandos
+          (56 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          1.038 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> actor, category, film, film_actor, film_category, inventory, payment, rental, rental_by_category<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">111</td>
+        <td>atendente_03</td>
+        <td class="n">27/03/2026 16:35 → 27/03/2026 16:40</td>
+        <td class="n">0,659</td>
+        <td class="n">24</td>
+        <td>
+          <ul class="why"><li>comandos: 84 (acima do máximo do histórico; mediana 4, máximo 18)</li><li>SELECT: 57 (acima do máximo do histórico; mediana 2, máximo 15)</li><li>linhas afetadas: 27 (acima do máximo do histórico; mediana 1, máximo 8)</li></ul>
+        </td>
+        <td>
+          84 comandos
+          (57 SELECT, 18 INSERT, 9 UPDATE, 0 DELETE)<br>
+          282 linhas retornadas · 27 afetadas<br>
+<span class="muted">tabelas:</span> address, category, city, customer, film, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">59</td>
+        <td>gerente_02</td>
+        <td class="n">25/03/2026 16:30 → 25/03/2026 16:35</td>
+        <td class="n">0,657</td>
+        <td class="n">26</td>
+        <td>
+          <ul class="why"><li>linhas afetadas: 4 (acima do máximo do histórico; mediana 0, máximo 2)</li><li>linhas retornadas (soma): 199 (acima do máximo do histórico; mediana 10, máximo 111)</li><li>SELECT: 11 (acima do máximo do histórico; mediana 1, máximo 7)</li></ul>
+        </td>
+        <td>
+          15 comandos
+          (11 SELECT, 0 INSERT, 3 UPDATE, 1 DELETE)<br>
+          199 linhas retornadas · 4 afetadas<br>
+<span class="muted">tabelas:</span> customer, film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">27</td>
+        <td>analista_01</td>
+        <td class="n">24/03/2026 09:40 → 24/03/2026 09:45</td>
+        <td class="n">0,655</td>
+        <td class="n">27</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 112.009 (acima do máximo do histórico; mediana 16, máximo 16.005)</li><li>linhas retornadas (máx.): 56.676 (acima do máximo do histórico; mediana 16, máximo 15.973)</li><li>formatos de consulta inéditos: 100,0% dos formatos da janela</li></ul>
+        </td>
+        <td>
+          2 comandos
+          (2 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          112.009 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">104</td>
+        <td>atendente_01</td>
+        <td class="n">27/03/2026 13:15 → 27/03/2026 13:25</td>
+        <td class="n">0,654</td>
+        <td class="n">28</td>
+        <td>
+          <ul class="why"><li>comandos: 85 (acima do máximo do histórico; mediana 4, máximo 14)</li><li>SELECT: 70 (acima do máximo do histórico; mediana 3, máximo 14)</li><li>linhas afetadas: 15 (acima do máximo do histórico; mediana 1, máximo 8)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">27/03/2026 13:15</td><td class="n">0,594</td><td>comandos: 26 (acima do máximo do histórico; mediana 4, máximo 14) | SELECT: 19 (acima do máximo do histórico; mediana 3, máximo 14) | linhas afetadas: 7 (atingido em só 0,4% das janelas do histórico; mediana 1, máximo 8)</td></tr>
+                <tr><td class="n">27/03/2026 13:20</td><td class="n">0,654</td><td>comandos: 85 (acima do máximo do histórico; mediana 4, máximo 14) | SELECT: 70 (acima do máximo do histórico; mediana 3, máximo 14) | linhas afetadas: 15 (acima do máximo do histórico; mediana 1, máximo 8)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          111 comandos
+          (89 SELECT, 16 INSERT, 6 UPDATE, 0 DELETE)<br>
+          505 linhas retornadas · 22 afetadas<br>
+<span class="muted">tabelas:</span> address, category, city, customer, film, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">154</td>
+        <td>analista_01</td>
+        <td class="n">29/03/2026 18:25 → 29/03/2026 18:50</td>
+        <td class="n">0,652</td>
+        <td class="n">30</td>
+        <td>
+          <ul class="why"><li>atividade no fim de semana (0,0% das janelas do histórico)</li><li>horário incomum para o usuário: 18h (0,2% das janelas do histórico)</li><li>tabelas distintas: 9 (atingido em só 0,8% das janelas do histórico; mediana 3, máximo 9)</li></ul>
+          <details>
+            <summary>5 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">29/03/2026 18:25</td><td class="n">0,577</td><td>atividade no fim de semana (0,0% das janelas do histórico) | horário incomum para o usuário: 18h (0,2% das janelas do histórico) | conexões: 1 (atingido em só 2,8% das janelas do histórico; mediana 0, máximo 1)</td></tr>
+                <tr><td class="n">29/03/2026 18:30</td><td class="n">0,621</td><td>atividade no fim de semana (0,0% das janelas do histórico) | comandos: 7 (atingido em só 0,2% das janelas do histórico; mediana 1, máximo 7) | SELECT: 7 (atingido em só 0,2% das janelas do histórico; mediana 1, máximo 7)</td></tr>
+                <tr><td class="n">29/03/2026 18:35</td><td class="n">0,652</td><td>atividade no fim de semana (0,0% das janelas do histórico) | horário incomum para o usuário: 18h (0,2% das janelas do histórico) | tabelas distintas: 9 (atingido em só 0,8% das janelas do histórico; mediana 3, máximo 9)</td></tr>
+                <tr><td class="n">29/03/2026 18:40</td><td class="n">0,591</td><td>atividade no fim de semana (0,0% das janelas do histórico) | horário incomum para o usuário: 18h (0,2% das janelas do histórico) | comandos: 5 (atingido em só 1,1% das janelas do histórico; mediana 1, máximo 7)</td></tr>
+                <tr><td class="n">29/03/2026 18:45</td><td class="n">0,574</td><td>atividade no fim de semana (0,0% das janelas do histórico) | horário incomum para o usuário: 18h (0,2% das janelas do histórico)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          20 comandos
+          (20 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          513 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> actor, category, film, film_actor, film_category, inventory, payment, rental, rental_by_category<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">110</td>
+        <td>svc_locadora</td>
+        <td class="n">27/03/2026 15:45 → 27/03/2026 15:50</td>
+        <td class="n">0,649</td>
+        <td class="n">31</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 112.288 (acima do máximo do histórico; mediana 61, máximo 10.072)</li><li>duração máx. (ms): 67,0 (acima do máximo do histórico; mediana 0,5, máximo 7,3)</li><li>linhas retornadas (máx.): 57.561 (acima do máximo do histórico; mediana 24, máximo 10.000)</li></ul>
+        </td>
+        <td>
+          4 comandos
+          (4 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          112.288 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> film, film_category, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">8</td>
+        <td>analista_01</td>
+        <td class="n">23/03/2026 10:40 → 23/03/2026 10:45</td>
+        <td class="n">0,648</td>
+        <td class="n">32</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 111.576 (acima do máximo do histórico; mediana 16, máximo 16.005)</li><li>linhas retornadas (máx.): 56.456 (acima do máximo do histórico; mediana 16, máximo 15.973)</li><li>formatos de consulta inéditos: 100,0% dos formatos da janela</li></ul>
+        </td>
+        <td>
+          2 comandos
+          (2 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          111.576 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">86</td>
+        <td>gerente_02</td>
+        <td class="n">26/03/2026 15:25 → 26/03/2026 15:30</td>
+        <td class="n">0,648</td>
+        <td class="n">33</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (máx.): 57.316 (acima do máximo do histórico; mediana 9, máximo 50)</li><li>linhas retornadas (soma): 111.774 (acima do máximo do histórico; mediana 10, máximo 111)</li><li>duração máx. (ms): 61,4 (acima do máximo do histórico; mediana 2,8, máximo 30,3)</li></ul>
+        </td>
+        <td>
+          3 comandos
+          (2 SELECT, 0 INSERT, 1 UPDATE, 0 DELETE)<br>
+          111.774 linhas retornadas · 1 afetadas<br>
+<span class="muted">tabelas:</span> film, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">101</td>
+        <td>analista_01</td>
+        <td class="n">27/03/2026 11:10 → 27/03/2026 11:15</td>
+        <td class="n">0,648</td>
+        <td class="n">35</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 112.185 (acima do máximo do histórico; mediana 16, máximo 16.005)</li><li>linhas retornadas (máx.): 57.472 (acima do máximo do histórico; mediana 16, máximo 15.973)</li><li>duração máx. (ms): 61,5 (acima do máximo do histórico; mediana 4,1, máximo 36,7)</li></ul>
+        </td>
+        <td>
+          3 comandos
+          (3 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          112.185 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> actor, category, film, film_actor, film_category, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">114</td>
+        <td>gerente_01</td>
+        <td class="n">27/03/2026 17:25 → 27/03/2026 17:30</td>
+        <td class="n">0,636</td>
+        <td class="n">41</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (máx.): 57.593 (acima do máximo do histórico; mediana 10, máximo 50)</li><li>linhas retornadas (soma): 112.345 (acima do máximo do histórico; mediana 10, máximo 113)</li><li>duração máx. (ms): 62,7 (acima do máximo do histórico; mediana 3,1, máximo 21,0)</li></ul>
+        </td>
+        <td>
+          3 comandos
+          (3 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          112.345 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">131</td>
+        <td>atendente_02</td>
+        <td class="n">28/03/2026 08:30 → 28/03/2026 08:35</td>
+        <td class="n">0,632</td>
+        <td class="n">43</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 103 (atingido em só 0,1% das janelas do histórico; mediana 10, máximo 10.009)</li><li>comandos: 15 (atingido em só 0,5% das janelas do histórico; mediana 4, máximo 18)</li><li>SELECT: 11 (atingido em só 0,9% das janelas do histórico; mediana 2, máximo 17)</li></ul>
+        </td>
+        <td>
+          15 comandos
+          (11 SELECT, 2 INSERT, 1 UPDATE, 0 DELETE)<br>
+          103 linhas retornadas · 3 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">tabelas:</span> customer, film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">141</td>
+        <td>svc_locadora</td>
+        <td class="n">29/03/2026 00:00 → 29/03/2026 00:15</td>
+        <td class="n">0,630</td>
+        <td class="n">44</td>
+        <td>
+          <ul class="why"><li>comandos com erro: 5 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>erros de permissão: 5 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>formatos de consulta inéditos: 100,0% dos formatos da janela</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">29/03/2026 00:00</td><td class="n">0,594</td><td>duração máx. (ms): 1,1 (atingido em só 4,4% das janelas do histórico; mediana 0,5, máximo 7,3)</td></tr>
+                <tr><td class="n">29/03/2026 00:10</td><td class="n">0,630</td><td>comandos com erro: 5 (acima do máximo do histórico; mediana 0, máximo 0) | erros de permissão: 5 (acima do máximo do histórico; mediana 0, máximo 0) | formatos de consulta inéditos: 100,0% dos formatos da janela</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          7 comandos
+          (4 SELECT, 2 INSERT, 1 UPDATE, 0 DELETE)<br>
+          1 linhas retornadas · 2 afetadas<br>
+5 erros (5 de permissão)<br><span class="muted">tabelas:</span> payment, rental, sales_by_store<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">76</td>
+        <td>atendente_01</td>
+        <td class="n">26/03/2026 08:05 → 26/03/2026 08:15</td>
+        <td class="n">0,626</td>
+        <td class="n">47</td>
+        <td>
+          <ul class="why"><li>duração máx. (ms): 5,6 (atingido em só 0,1% das janelas do histórico; mediana 0,6, máximo 5,6)</li><li>DELETE: 1 (atingido em só 0,5% das janelas do histórico; mediana 0, máximo 2)</li><li>erros de permissão: 1 (atingido em só 0,5% das janelas do histórico; mediana 0, máximo 10)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">26/03/2026 08:05</td><td class="n">0,626</td><td>duração máx. (ms): 5,6 (atingido em só 0,1% das janelas do histórico; mediana 0,6, máximo 5,6) | DELETE: 1 (atingido em só 0,5% das janelas do histórico; mediana 0, máximo 2) | erros de permissão: 1 (atingido em só 0,5% das janelas do histórico; mediana 0, máximo 10)</td></tr>
+                <tr><td class="n">26/03/2026 08:10</td><td class="n">0,598</td><td>tabelas distintas: 11 (acima do máximo do histórico; mediana 4, máximo 9) | comandos com erro: 4 (atingido em só 0,3% das janelas do histórico; mediana 0, máximo 10) | erros de permissão: 4 (atingido em só 0,3% das janelas do histórico; mediana 0, máximo 10)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          18 comandos
+          (12 SELECT, 2 INSERT, 2 UPDATE, 2 DELETE)<br>
+          17 linhas retornadas · 4 afetadas<br>
+5 erros (5 de permissão)<br><span class="muted">tabelas:</span> address, category, city, customer, film, film_category, inventory, payment, rental, sales_by_store, staff<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">64</td>
+        <td>atendente_02</td>
+        <td class="n">25/03/2026 20:15 → 25/03/2026 20:30</td>
+        <td class="n">0,624</td>
+        <td class="n">49</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 20h (0,0% das janelas do histórico)</li><li>comandos: 13 (atingido em só 1,4% das janelas do histórico; mediana 4, máximo 18)</li><li>linhas afetadas: 6 (atingido em só 1,7% das janelas do histórico; mediana 1, máximo 8)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">25/03/2026 20:15</td><td class="n">0,624</td><td>horário incomum para o usuário: 20h (0,0% das janelas do histórico) | comandos: 13 (atingido em só 1,4% das janelas do histórico; mediana 4, máximo 18) | linhas afetadas: 6 (atingido em só 1,7% das janelas do histórico; mediana 1, máximo 8)</td></tr>
+                <tr><td class="n">25/03/2026 20:25</td><td class="n">0,557</td><td>horário incomum para o usuário: 20h (0,0% das janelas do histórico) | UPDATE: 3 (atingido em só 0,4% das janelas do histórico; mediana 0, máximo 3) | comandos: 12 (atingido em só 1,7% das janelas do histórico; mediana 4, máximo 18)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          25 comandos
+          (14 SELECT, 6 INSERT, 5 UPDATE, 0 DELETE)<br>
+          76 linhas retornadas · 11 afetadas<br>
+<span class="muted">tabelas:</span> address, category, city, customer, film, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">79</td>
+        <td>atendente_02</td>
+        <td class="n">26/03/2026 09:20 → 26/03/2026 09:30</td>
+        <td class="n">0,623</td>
+        <td class="n">50</td>
+        <td>
+          <ul class="why"><li>comandos: 33 (acima do máximo do histórico; mediana 4, máximo 18)</li><li>SELECT: 26 (acima do máximo do histórico; mediana 2, máximo 17)</li><li>linhas retornadas (soma): 102 (atingido em só 0,1% das janelas do histórico; mediana 10, máximo 10.009)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">26/03/2026 09:20</td><td class="n">0,565</td><td>comandos: 18 (atingido em só 0,1% das janelas do histórico; mediana 4, máximo 18) | linhas afetadas: 8 (atingido em só 0,2% das janelas do histórico; mediana 1, máximo 8) | INSERT: 6 (atingido em só 1,4% das janelas do histórico; mediana 0, máximo 8)</td></tr>
+                <tr><td class="n">26/03/2026 09:25</td><td class="n">0,623</td><td>comandos: 33 (acima do máximo do histórico; mediana 4, máximo 18) | SELECT: 26 (acima do máximo do histórico; mediana 2, máximo 17) | linhas retornadas (soma): 102 (atingido em só 0,1% das janelas do histórico; mediana 10, máximo 10.009)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          51 comandos
+          (36 SELECT, 10 INSERT, 5 UPDATE, 0 DELETE)<br>
+          128 linhas retornadas · 15 afetadas<br>
+<span class="muted">tabelas:</span> address, category, city, customer, film, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">95</td>
+        <td>atendente_03</td>
+        <td class="n">27/03/2026 05:45 → 27/03/2026 05:55</td>
+        <td class="n">0,620</td>
+        <td class="n">53</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 05h (0,0% das janelas do histórico)</li><li>UPDATE: 4 (acima do máximo do histórico; mediana 0, máximo 3)</li><li>linhas afetadas: 8 (atingido em só 0,1% das janelas do histórico; mediana 1, máximo 8)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">27/03/2026 05:45</td><td class="n">0,600</td><td>horário incomum para o usuário: 05h (0,0% das janelas do histórico) | SELECT: 18 (acima do máximo do histórico; mediana 2, máximo 15) | comandos: 21 (acima do máximo do histórico; mediana 4, máximo 18)</td></tr>
+                <tr><td class="n">27/03/2026 05:50</td><td class="n">0,620</td><td>horário incomum para o usuário: 05h (0,0% das janelas do histórico) | UPDATE: 4 (acima do máximo do histórico; mediana 0, máximo 3) | linhas afetadas: 8 (atingido em só 0,1% das janelas do histórico; mediana 1, máximo 8)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          39 comandos
+          (28 SELECT, 6 INSERT, 5 UPDATE, 0 DELETE)<br>
+          135 linhas retornadas · 11 afetadas<br>
+<span class="muted">tabelas:</span> address, category, city, customer, film, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">63</td>
+        <td>svc_locadora</td>
+        <td class="n">25/03/2026 19:00 → 25/03/2026 19:05</td>
+        <td class="n">0,619</td>
+        <td class="n">56</td>
+        <td>
+          <ul class="why"><li>comandos: 39 (acima do máximo do histórico; mediana 7, máximo 36)</li><li>INSERT: 12 (atingido em só &lt;0,1% das janelas do histórico; mediana 0, máximo 12)</li><li>linhas afetadas: 12 (atingido em só &lt;0,1% das janelas do histórico; mediana 0, máximo 52)</li></ul>
+        </td>
+        <td>
+          39 comandos
+          (27 SELECT, 12 INSERT, 0 UPDATE, 0 DELETE)<br>
+          234 linhas retornadas · 12 afetadas<br>
+<span class="muted">tabelas:</span> actor, customer, film, film_actor, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">108</td>
+        <td>gerente_02</td>
+        <td class="n">27/03/2026 15:20 → 27/03/2026 15:25</td>
+        <td class="n">0,619</td>
+        <td class="n">57</td>
+        <td>
+          <ul class="why"><li>DELETE: 2 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 7)</li><li>comandos com erro: 3 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 13)</li><li>erros de permissão: 3 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 13)</li></ul>
+        </td>
+        <td>
+          3 comandos
+          (0 SELECT, 0 INSERT, 1 UPDATE, 2 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+3 erros (3 de permissão)<br><span class="muted">tabelas:</span> payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">37</td>
+        <td>gerente_01</td>
+        <td class="n">24/03/2026 15:10 → 24/03/2026 15:15</td>
+        <td class="n">0,618</td>
+        <td class="n">59</td>
+        <td>
+          <ul class="why"><li>linhas afetadas: 501 (acima do máximo do histórico; mediana 0, máximo 3)</li><li>formatos de consulta inéditos: 50,0% dos formatos da janela</li><li>duração máx. (ms): 12,5 (atingido em só 2,2% das janelas do histórico; mediana 3,1, máximo 21,0)</li></ul>
+        </td>
+        <td>
+          2 comandos
+          (0 SELECT, 0 INSERT, 1 UPDATE, 1 DELETE)<br>
+          0 linhas retornadas · 501 afetadas<br>
+<span class="muted">tabelas:</span> customer, payment<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">138</td>
+        <td>atendente_04</td>
+        <td class="n">28/03/2026 21:50 → 28/03/2026 22:00</td>
+        <td class="n">0,617</td>
+        <td class="n">60</td>
+        <td>
+          <ul class="why"><li>falhas de autenticação: 36 (acima do máximo do histórico; mediana 0, máximo 10)</li><li>horário incomum para o usuário: 21h (0,0% das janelas do histórico)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">28/03/2026 21:50</td><td class="n">0,617</td><td>falhas de autenticação: 36 (acima do máximo do histórico; mediana 0, máximo 10) | horário incomum para o usuário: 21h (0,0% das janelas do histórico)</td></tr>
+                <tr><td class="n">28/03/2026 21:55</td><td class="n">0,609</td><td>horário incomum para o usuário: 21h (0,0% das janelas do histórico) | falhas de autenticação: 4 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+40 falhas de autenticação<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">56</td>
+        <td>analista_01</td>
+        <td class="n">25/03/2026 15:20 → 25/03/2026 15:30</td>
+        <td class="n">0,617</td>
+        <td class="n">61</td>
+        <td>
+          <ul class="why"><li>erros de permissão: 7 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>comandos com erro: 7 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>tabelas nunca acessadas pelo usuário: address, customer, staff</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">25/03/2026 15:20</td><td class="n">0,617</td><td>erros de permissão: 7 (acima do máximo do histórico; mediana 0, máximo 0) | comandos com erro: 7 (acima do máximo do histórico; mediana 0, máximo 1) | tabelas nunca acessadas pelo usuário: address, customer, staff</td></tr>
+                <tr><td class="n">25/03/2026 15:25</td><td class="n">0,588</td><td>erros de permissão: 8 (acima do máximo do histórico; mediana 0, máximo 0) | comandos com erro: 8 (acima do máximo do histórico; mediana 0, máximo 1) | formatos de consulta inéditos: 75,0% dos formatos da janela</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          16 comandos
+          (16 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          10 linhas retornadas · 0 afetadas<br>
+15 erros (15 de permissão)<br><span class="muted">tabelas:</span> address, customer, film, inventory, rental, staff<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">1</td>
+        <td>analista_02</td>
+        <td class="n">23/03/2026 01:25 → 23/03/2026 01:30</td>
+        <td class="n">0,617</td>
+        <td class="n">62</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 01h (0,0% das janelas do histórico)</li><li>duração máx. (ms): 33,5 (atingido em só 1,5% das janelas do histórico; mediana 3,9, máximo 51,7)</li><li>conexões: 1 (atingido em só 3,0% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          2 comandos
+          (2 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          26 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> category, film, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">3</td>
+        <td>svc_locadora</td>
+        <td class="n">23/03/2026 02:45 → 23/03/2026 02:55</td>
+        <td class="n">0,616</td>
+        <td class="n">64</td>
+        <td>
+          <ul class="why"><li>comandos com erro: 2 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>erros de permissão: 2 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>UPDATE: 2 (acima do máximo do histórico; mediana 0, máximo 1)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">23/03/2026 02:45</td><td class="n">0,616</td><td>comandos com erro: 2 (acima do máximo do histórico; mediana 0, máximo 0) | erros de permissão: 2 (acima do máximo do histórico; mediana 0, máximo 0) | UPDATE: 2 (acima do máximo do histórico; mediana 0, máximo 1)</td></tr>
+                <tr><td class="n">23/03/2026 02:50</td><td class="n">0,589</td><td>comandos com erro: 3 (acima do máximo do histórico; mediana 0, máximo 0) | erros de permissão: 3 (acima do máximo do histórico; mediana 0, máximo 0) | tabelas nunca acessadas pelo usuário: sales_by_store, staff</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          5 comandos
+          (3 SELECT, 0 INSERT, 2 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+5 erros (5 de permissão)<br><span class="muted">tabelas:</span> payment, sales_by_store, staff<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">61</td>
+        <td>gerente_01</td>
+        <td class="n">25/03/2026 16:35 → 25/03/2026 16:40</td>
+        <td class="n">0,615</td>
+        <td class="n">65</td>
+        <td>
+          <ul class="why"><li>linhas afetadas: 500 (acima do máximo do histórico; mediana 0, máximo 3)</li><li>formatos de consulta inéditos: 100,0% dos formatos da janela</li><li>duração máx. (ms): 12,9 (atingido em só 1,9% das janelas do histórico; mediana 3,1, máximo 21,0)</li></ul>
+        </td>
+        <td>
+          1 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 1 DELETE)<br>
+          0 linhas retornadas · 500 afetadas<br>
+<span class="muted">tabelas:</span> payment<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">157</td>
+        <td>atendente_01</td>
+        <td class="n">29/03/2026 23:10 → 29/03/2026 23:20</td>
+        <td class="n">0,614</td>
+        <td class="n">66</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 23h (0,0% das janelas do histórico)</li><li>falhas de autenticação: 8 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">29/03/2026 23:10</td><td class="n">0,605</td><td>horário incomum para o usuário: 23h (0,0% das janelas do histórico) | falhas de autenticação: 2 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</td></tr>
+                <tr><td class="n">29/03/2026 23:15</td><td class="n">0,614</td><td>horário incomum para o usuário: 23h (0,0% das janelas do histórico) | falhas de autenticação: 8 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+10 falhas de autenticação<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">105</td>
+        <td>atendente_04</td>
+        <td class="n">27/03/2026 13:25 → 27/03/2026 13:30</td>
+        <td class="n">0,614</td>
+        <td class="n">67</td>
+        <td>
+          <ul class="why"><li>comandos com erro: 3 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>erros de permissão: 3 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>DELETE: 1 (acima do máximo do histórico; mediana 0, máximo 0)</li></ul>
+        </td>
+        <td>
+          14 comandos
+          (8 SELECT, 4 INSERT, 1 UPDATE, 1 DELETE)<br>
+          17 linhas retornadas · 5 afetadas<br>
+3 erros (3 de permissão)<br><span class="muted">tabelas:</span> address, city, customer, film, inventory, payment, rental, sales_by_store, staff<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">99</td>
+        <td>atendente_01</td>
+        <td class="n">27/03/2026 09:30 → 27/03/2026 09:35</td>
+        <td class="n">0,613</td>
+        <td class="n">68</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (máx.): 10.000 (acima do máximo do histórico; mediana 7, máximo 2.000)</li><li>linhas retornadas (soma): 10.023 (acima do máximo do histórico; mediana 11, máximo 2.020)</li><li>duração máx. (ms): 7,3 (acima do máximo do histórico; mediana 0,6, máximo 5,6)</li></ul>
+        </td>
+        <td>
+          5 comandos
+          (3 SELECT, 0 INSERT, 2 UPDATE, 0 DELETE)<br>
+          10.023 linhas retornadas · 2 afetadas<br>
+<span class="muted">tabelas:</span> film, inventory, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">135</td>
+        <td>atendente_02</td>
+        <td class="n">28/03/2026 12:35 → 28/03/2026 12:45</td>
+        <td class="n">0,613</td>
+        <td class="n">69</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 1)</li><li>comandos com erro: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 1)</li><li>comandos: 12 (atingido em só 1,7% das janelas do histórico; mediana 4, máximo 18)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">28/03/2026 12:35</td><td class="n">0,613</td><td>outros comandos: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 1) | comandos com erro: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 1) | comandos: 12 (atingido em só 1,7% das janelas do histórico; mediana 4, máximo 18)</td></tr>
+                <tr><td class="n">28/03/2026 12:40</td><td class="n">0,575</td><td>outros comandos: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 1) | comandos com erro: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 1)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          15 comandos
+          (6 SELECT, 6 INSERT, 1 UPDATE, 0 DELETE)<br>
+          15 linhas retornadas · 7 afetadas<br>
+2 erros (0 de permissão)<br><span class="muted">tabelas:</span> address, category, city, customer, film, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">58</td>
+        <td>atendente_04</td>
+        <td class="n">25/03/2026 15:55 → 25/03/2026 16:00</td>
+        <td class="n">0,612</td>
+        <td class="n">71</td>
+        <td>
+          <ul class="why"><li>comandos com erro: 3 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>DELETE: 1 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>erros de permissão: 2 (acima do máximo do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          8 comandos
+          (4 SELECT, 2 INSERT, 0 UPDATE, 1 DELETE)<br>
+          7 linhas retornadas · 2 afetadas<br>
+3 erros (2 de permissão)<br><span class="muted">tabelas:</span> address, city, customer, inventory, payment, rental, sales_by_store<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">54</td>
+        <td>atendente_02</td>
+        <td class="n">25/03/2026 13:10 → 25/03/2026 13:15</td>
+        <td class="n">0,612</td>
+        <td class="n">72</td>
+        <td>
+          <ul class="why"><li>comandos: 29 (acima do máximo do histórico; mediana 4, máximo 18)</li><li>SELECT: 22 (acima do máximo do histórico; mediana 2, máximo 17)</li><li>linhas retornadas (soma): 136 (atingido em só 0,1% das janelas do histórico; mediana 10, máximo 10.009)</li></ul>
+        </td>
+        <td>
+          29 comandos
+          (22 SELECT, 4 INSERT, 3 UPDATE, 0 DELETE)<br>
+          136 linhas retornadas · 7 afetadas<br>
+<span class="muted">tabelas:</span> address, category, city, customer, film, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">155</td>
+        <td>atendente_01</td>
+        <td class="n">29/03/2026 19:00 → 29/03/2026 19:10</td>
+        <td class="n">0,612</td>
+        <td class="n">73</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 19h (0,0% das janelas do histórico)</li><li>falhas de autenticação: 9 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">29/03/2026 19:00</td><td class="n">0,612</td><td>horário incomum para o usuário: 19h (0,0% das janelas do histórico) | falhas de autenticação: 9 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</td></tr>
+                <tr><td class="n">29/03/2026 19:05</td><td class="n">0,594</td><td>horário incomum para o usuário: 19h (0,0% das janelas do histórico) | falhas de autenticação: 1 (atingido em só 0,3% das janelas do histórico; mediana 0, máximo 10)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+10 falhas de autenticação<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">31</td>
+        <td>analista_02</td>
+        <td class="n">24/03/2026 12:20 → 24/03/2026 12:25</td>
+        <td class="n">0,611</td>
+        <td class="n">74</td>
+        <td>
+          <ul class="why"><li>comandos com erro: 5 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>erros de permissão: 5 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>tabelas nunca acessadas pelo usuário: address, staff</li></ul>
+        </td>
+        <td>
+          5 comandos
+          (5 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+5 erros (5 de permissão)<br><span class="muted">tabelas:</span> address, customer, staff<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">46</td>
+        <td>gerente_01</td>
+        <td class="n">25/03/2026 09:25 → 25/03/2026 09:30</td>
+        <td class="n">0,609</td>
+        <td class="n">76</td>
+        <td>
+          <ul class="why"><li>erros de permissão: 5 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>comandos com erro: 5 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>DELETE: 3 (acima do máximo do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          7 comandos
+          (2 SELECT, 0 INSERT, 2 UPDATE, 3 DELETE)<br>
+          2 linhas retornadas · 0 afetadas<br>
+5 erros (5 de permissão)<br><span class="muted">tabelas:</span> address, city, customer, payment, rental<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">7</td>
+        <td>analista_02</td>
+        <td class="n">23/03/2026 10:00 → 23/03/2026 10:10</td>
+        <td class="n">0,608</td>
+        <td class="n">77</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (máx.): 14.465 (atingido em só 0,6% das janelas do histórico; mediana 16, máximo 15.978)</li><li>linhas retornadas (soma): 14.465 (atingido em só 0,6% das janelas do histórico; mediana 16, máximo 15.994)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">23/03/2026 10:00</td><td class="n">0,608</td><td>linhas retornadas (máx.): 14.465 (atingido em só 0,6% das janelas do histórico; mediana 16, máximo 15.978) | linhas retornadas (soma): 14.465 (atingido em só 0,6% das janelas do histórico; mediana 16, máximo 15.994)</td></tr>
+                <tr><td class="n">23/03/2026 10:05</td><td class="n">0,603</td><td>linhas retornadas (máx.): 13.668 (atingido em só 0,6% das janelas do histórico; mediana 16, máximo 15.978) | linhas retornadas (soma): 13.668 (atingido em só 0,6% das janelas do histórico; mediana 16, máximo 15.994)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          2 comandos
+          (2 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          28.133 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">148</td>
+        <td>gerente_02</td>
+        <td class="n">29/03/2026 07:15 → 29/03/2026 07:25</td>
+        <td class="n">0,608</td>
+        <td class="n">78</td>
+        <td>
+          <ul class="why"><li>atividade no fim de semana (0,0% das janelas do histórico)</li><li>horário incomum para o usuário: 07h (0,0% das janelas do histórico)</li><li>SELECT: 8 (acima do máximo do histórico; mediana 1, máximo 7)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">29/03/2026 07:15</td><td class="n">0,581</td><td>atividade no fim de semana (0,0% das janelas do histórico) | horário incomum para o usuário: 07h (0,0% das janelas do histórico) | conexões: 1 (atingido em só 2,8% das janelas do histórico; mediana 0, máximo 1)</td></tr>
+                <tr><td class="n">29/03/2026 07:20</td><td class="n">0,608</td><td>atividade no fim de semana (0,0% das janelas do histórico) | horário incomum para o usuário: 07h (0,0% das janelas do histórico) | SELECT: 8 (acima do máximo do histórico; mediana 1, máximo 7)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          11 comandos
+          (11 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          120 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> address, city, customer, film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">137</td>
+        <td>svc_locadora</td>
+        <td class="n">28/03/2026 20:00 → 28/03/2026 20:05</td>
+        <td class="n">0,608</td>
+        <td class="n">79</td>
+        <td>
+          <ul class="why"><li>comandos: 28 (atingido em só 0,3% das janelas do histórico; mediana 7, máximo 36)</li><li>INSERT: 8 (atingido em só 0,4% das janelas do histórico; mediana 0, máximo 12)</li><li>linhas afetadas: 8 (atingido em só 0,5% das janelas do histórico; mediana 0, máximo 52)</li></ul>
+        </td>
+        <td>
+          28 comandos
+          (20 SELECT, 8 INSERT, 0 UPDATE, 0 DELETE)<br>
+          243 linhas retornadas · 8 afetadas<br>
+<span class="muted">tabelas:</span> actor, customer, film, film_actor, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">91</td>
+        <td>atendente_03</td>
+        <td class="n">26/03/2026 18:35 → 26/03/2026 18:40</td>
+        <td class="n">0,607</td>
+        <td class="n">80</td>
+        <td>
+          <ul class="why"><li>duração máx. (ms): 7,8 (acima do máximo do histórico; mediana 0,6, máximo 7,0)</li><li>linhas retornadas (soma): 10.010 (acima do máximo do histórico; mediana 9, máximo 10.003)</li><li>linhas retornadas (máx.): 10.000 (atingido em só 0,1% das janelas do histórico; mediana 5, máximo 10.000)</li></ul>
+        </td>
+        <td>
+          6 comandos
+          (5 SELECT, 0 INSERT, 1 UPDATE, 0 DELETE)<br>
+          10.010 linhas retornadas · 1 afetadas<br>
+<span class="muted">tabelas:</span> inventory, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">85</td>
+        <td>analista_01</td>
+        <td class="n">26/03/2026 14:05 → 26/03/2026 14:15</td>
+        <td class="n">0,605</td>
+        <td class="n">81</td>
+        <td>
+          <ul class="why"><li>erros de permissão: 4 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>comandos com erro: 4 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>tabelas nunca acessadas pelo usuário: customer, staff</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">26/03/2026 14:05</td><td class="n">0,605</td><td>erros de permissão: 4 (acima do máximo do histórico; mediana 0, máximo 0) | comandos com erro: 4 (acima do máximo do histórico; mediana 0, máximo 1) | tabelas nunca acessadas pelo usuário: customer, staff</td></tr>
+                <tr><td class="n">26/03/2026 14:10</td><td class="n">0,559</td><td>erros de permissão: 1 (acima do máximo do histórico; mediana 0, máximo 0) | tabelas nunca acessadas pelo usuário: customer | formatos de consulta inéditos: 100,0% dos formatos da janela</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          5 comandos
+          (5 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+5 erros (5 de permissão)<br><span class="muted">tabelas:</span> customer, staff<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">153</td>
+        <td>svc_locadora</td>
+        <td class="n">29/03/2026 13:20 → 29/03/2026 13:25</td>
+        <td class="n">0,604</td>
+        <td class="n">84</td>
+        <td>
+          <ul class="why"><li>duração máx. (ms): 7,5 (acima do máximo do histórico; mediana 0,5, máximo 7,3)</li><li>linhas retornadas (soma): 10.143 (acima do máximo do histórico; mediana 61, máximo 10.072)</li><li>linhas retornadas (máx.): 10.000 (atingido em só &lt;0,1% das janelas do histórico; mediana 24, máximo 10.000)</li></ul>
+        </td>
+        <td>
+          18 comandos
+          (16 SELECT, 2 INSERT, 0 UPDATE, 0 DELETE)<br>
+          10.143 linhas retornadas · 2 afetadas<br>
+<span class="muted">tabelas:</span> actor, customer, film, film_actor, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">14</td>
+        <td>analista_01</td>
+        <td class="n">23/03/2026 14:40 → 23/03/2026 14:45</td>
+        <td class="n">0,604</td>
+        <td class="n">85</td>
+        <td>
+          <ul class="why"><li>comandos: 8 (acima do máximo do histórico; mediana 1, máximo 7)</li><li>SELECT: 8 (acima do máximo do histórico; mediana 1, máximo 7)</li><li>tabelas distintas: 9 (atingido em só 0,8% das janelas do histórico; mediana 3, máximo 9)</li></ul>
+        </td>
+        <td>
+          8 comandos
+          (8 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          188 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> actor, category, film, film_actor, film_category, inventory, payment, rental, rental_by_category<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">116</td>
+        <td>analista_01</td>
+        <td class="n">27/03/2026 17:50 → 27/03/2026 18:10</td>
+        <td class="n">0,603</td>
+        <td class="n">87</td>
+        <td>
+          <ul class="why"><li>formatos de consulta inéditos: 50,0% dos formatos da janela</li><li>comandos: 7 (atingido em só 0,2% das janelas do histórico; mediana 1, máximo 7)</li><li>SELECT: 7 (atingido em só 0,2% das janelas do histórico; mediana 1, máximo 7)</li></ul>
+          <details>
+            <summary>4 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">27/03/2026 17:50</td><td class="n">0,580</td><td>formatos de consulta inéditos: 100,0% dos formatos da janela | comandos: 6 (atingido em só 0,8% das janelas do histórico; mediana 1, máximo 7) | SELECT: 6 (atingido em só 0,8% das janelas do histórico; mediana 1, máximo 7)</td></tr>
+                <tr><td class="n">27/03/2026 17:55</td><td class="n">0,578</td><td>formatos de consulta inéditos: 50,0% dos formatos da janela | comandos: 7 (atingido em só 0,2% das janelas do histórico; mediana 1, máximo 7) | SELECT: 7 (atingido em só 0,2% das janelas do histórico; mediana 1, máximo 7)</td></tr>
+                <tr><td class="n">27/03/2026 18:00</td><td class="n">0,603</td><td>formatos de consulta inéditos: 50,0% dos formatos da janela | comandos: 7 (atingido em só 0,2% das janelas do histórico; mediana 1, máximo 7) | SELECT: 7 (atingido em só 0,2% das janelas do histórico; mediana 1, máximo 7)</td></tr>
+                <tr><td class="n">27/03/2026 18:05</td><td class="n">0,558</td><td>formatos de consulta inéditos: 50,0% dos formatos da janela | horário incomum para o usuário: 18h (0,2% das janelas do histórico)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          23 comandos
+          (23 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          1.015 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">50</td>
+        <td>atendente_02</td>
+        <td class="n">25/03/2026 10:10 → 25/03/2026 10:15</td>
+        <td class="n">0,603</td>
+        <td class="n">88</td>
+        <td>
+          <ul class="why"><li>linhas afetadas: 12 (acima do máximo do histórico; mediana 1, máximo 8)</li><li>comandos: 24 (acima do máximo do histórico; mediana 4, máximo 18)</li><li>INSERT: 10 (acima do máximo do histórico; mediana 0, máximo 8)</li></ul>
+        </td>
+        <td>
+          24 comandos
+          (12 SELECT, 10 INSERT, 2 UPDATE, 0 DELETE)<br>
+          59 linhas retornadas · 12 afetadas<br>
+<span class="muted">tabelas:</span> address, category, city, customer, film, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">84</td>
+        <td>gerente_01</td>
+        <td class="n">26/03/2026 13:50 → 26/03/2026 13:55</td>
+        <td class="n">0,602</td>
+        <td class="n">90</td>
+        <td>
+          <ul class="why"><li>erros de permissão: 2 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>comandos com erro: 2 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>formatos de consulta inéditos: 66,7% dos formatos da janela</li></ul>
+        </td>
+        <td>
+          3 comandos
+          (0 SELECT, 0 INSERT, 2 UPDATE, 1 DELETE)<br>
+          0 linhas retornadas · 1 afetadas<br>
+2 erros (2 de permissão)<br><span class="muted">tabelas:</span> customer, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">13</td>
+        <td>analista_01</td>
+        <td class="n">23/03/2026 14:00 → 23/03/2026 14:05</td>
+        <td class="n">0,602</td>
+        <td class="n">91</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 0,2% das janelas do histórico; mediana 0, máximo 1)</li><li>comandos com erro: 1 (atingido em só 0,2% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          1 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">55</td>
+        <td>analista_02</td>
+        <td class="n">25/03/2026 14:15 → 25/03/2026 14:25</td>
+        <td class="n">0,602</td>
+        <td class="n">92</td>
+        <td>
+          <ul class="why"><li>comandos com erro: 4 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>erros de permissão: 4 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>tabelas nunca acessadas pelo usuário: address, staff</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">25/03/2026 14:15</td><td class="n">0,593</td><td>comandos com erro: 11 (acima do máximo do histórico; mediana 0, máximo 1) | erros de permissão: 11 (acima do máximo do histórico; mediana 0, máximo 1) | comandos: 12 (acima do máximo do histórico; mediana 1, máximo 5)</td></tr>
+                <tr><td class="n">25/03/2026 14:20</td><td class="n">0,602</td><td>comandos com erro: 4 (acima do máximo do histórico; mediana 0, máximo 1) | erros de permissão: 4 (acima do máximo do histórico; mediana 0, máximo 1) | tabelas nunca acessadas pelo usuário: address, staff</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          16 comandos
+          (16 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          100 linhas retornadas · 0 afetadas<br>
+15 erros (15 de permissão)<br><span class="muted">tabelas:</span> actor, address, category, customer, film, film_actor, film_category, staff<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">89</td>
+        <td>atendente_04</td>
+        <td class="n">26/03/2026 17:05 → 26/03/2026 17:15</td>
+        <td class="n">0,601</td>
+        <td class="n">93</td>
+        <td>
+          <ul class="why"><li>comandos com erro: 9 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>erros de permissão: 9 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>DELETE: 4 (acima do máximo do histórico; mediana 0, máximo 0)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">26/03/2026 17:05</td><td class="n">0,601</td><td>comandos com erro: 9 (acima do máximo do histórico; mediana 0, máximo 1) | erros de permissão: 9 (acima do máximo do histórico; mediana 0, máximo 1) | DELETE: 4 (acima do máximo do histórico; mediana 0, máximo 0)</td></tr>
+                <tr><td class="n">26/03/2026 17:10</td><td class="n">0,596</td><td>comandos com erro: 6 (acima do máximo do histórico; mediana 0, máximo 1) | erros de permissão: 6 (acima do máximo do histórico; mediana 0, máximo 1) | DELETE: 2 (acima do máximo do histórico; mediana 0, máximo 0)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          25 comandos
+          (14 SELECT, 4 INSERT, 1 UPDATE, 6 DELETE)<br>
+          29 linhas retornadas · 5 afetadas<br>
+15 erros (15 de permissão)<br><span class="muted">tabelas:</span> address, category, city, customer, film, film_category, inventory, payment, rental, sales_by_store, staff<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">28</td>
+        <td>analista_02</td>
+        <td class="n">24/03/2026 10:30 → 24/03/2026 10:35</td>
+        <td class="n">0,601</td>
+        <td class="n">94</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 0,4% das janelas do histórico; mediana 0, máximo 1)</li><li>comandos com erro: 1 (atingido em só 0,6% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          1 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">113</td>
+        <td>analista_01</td>
+        <td class="n">27/03/2026 17:15 → 27/03/2026 17:20</td>
+        <td class="n">0,600</td>
+        <td class="n">96</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 0,2% das janelas do histórico; mediana 0, máximo 1)</li><li>comandos com erro: 1 (atingido em só 0,2% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          1 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">49</td>
+        <td>analista_01</td>
+        <td class="n">25/03/2026 10:10 → 25/03/2026 10:15</td>
+        <td class="n">0,600</td>
+        <td class="n">97</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 0,2% das janelas do histórico; mediana 0, máximo 1)</li><li>comandos com erro: 1 (atingido em só 0,2% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          1 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">156</td>
+        <td>atendente_04</td>
+        <td class="n">29/03/2026 22:40 → 29/03/2026 22:55</td>
+        <td class="n">0,599</td>
+        <td class="n">98</td>
+        <td>
+          <ul class="why"><li>IP de origem nunca usado pelo usuário: 172.30.30.50</li><li>horário incomum para o usuário: 22h (0,0% das janelas do histórico)</li><li>conexões: 1 (atingido em só 2,7% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">29/03/2026 22:40</td><td class="n">0,599</td><td>IP de origem nunca usado pelo usuário: 172.30.30.50 | horário incomum para o usuário: 22h (0,0% das janelas do histórico) | conexões: 1 (atingido em só 2,7% das janelas do histórico; mediana 0, máximo 1)</td></tr>
+                <tr><td class="n">29/03/2026 22:50</td><td class="n">0,579</td><td>IP de origem nunca usado pelo usuário: 172.30.30.50 | horário incomum para o usuário: 22h (0,0% das janelas do histórico)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          5 comandos
+          (0 SELECT, 4 INSERT, 1 UPDATE, 0 DELETE)<br>
+          2 linhas retornadas · 5 afetadas<br>
+<span class="muted">tabelas:</span> payment, rental<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">117</td>
+        <td>atendente_04</td>
+        <td class="n">27/03/2026 20:35 → 27/03/2026 20:50</td>
+        <td class="n">0,598</td>
+        <td class="n">100</td>
+        <td>
+          <ul class="why"><li>IP de origem nunca usado pelo usuário: 172.30.30.50</li><li>horário incomum para o usuário: 20h (0,0% das janelas do histórico)</li><li>falhas de autenticação: 9 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</li></ul>
+          <details>
+            <summary>3 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">27/03/2026 20:35</td><td class="n">0,598</td><td>IP de origem nunca usado pelo usuário: 172.30.30.50 | horário incomum para o usuário: 20h (0,0% das janelas do histórico) | falhas de autenticação: 9 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</td></tr>
+                <tr><td class="n">27/03/2026 20:40</td><td class="n">0,597</td><td>falhas de autenticação: 23 (acima do máximo do histórico; mediana 0, máximo 10) | IP de origem nunca usado pelo usuário: 172.30.30.50 | horário incomum para o usuário: 20h (0,0% das janelas do histórico)</td></tr>
+                <tr><td class="n">27/03/2026 20:45</td><td class="n">0,598</td><td>IP de origem nunca usado pelo usuário: 172.30.30.50 | horário incomum para o usuário: 20h (0,0% das janelas do histórico) | falhas de autenticação: 8 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+40 falhas de autenticação<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">144</td>
+        <td>svc_locadora</td>
+        <td class="n">29/03/2026 02:50 → 29/03/2026 03:05</td>
+        <td class="n">0,598</td>
+        <td class="n">103</td>
+        <td>
+          <ul class="why"><li>UPDATE: 1 (atingido em só &lt;0,1% das janelas do histórico; mediana 0, máximo 1)</li><li>duração máx. (ms): 1,3 (atingido em só 1,6% das janelas do histórico; mediana 0,5, máximo 7,3)</li><li>linhas afetadas: 5 (atingido em só 2,1% das janelas do histórico; mediana 0, máximo 52)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">29/03/2026 02:50</td><td class="n">0,598</td><td>UPDATE: 1 (atingido em só &lt;0,1% das janelas do histórico; mediana 0, máximo 1) | duração máx. (ms): 1,3 (atingido em só 1,6% das janelas do histórico; mediana 0,5, máximo 7,3) | linhas afetadas: 5 (atingido em só 2,1% das janelas do histórico; mediana 0, máximo 52)</td></tr>
+                <tr><td class="n">29/03/2026 03:00</td><td class="n">0,571</td><td>horário incomum para o usuário: 03h (2,2% das janelas do histórico)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          1 comandos
+          (0 SELECT, 0 INSERT, 1 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 5 afetadas<br>
+<span class="muted">tabelas:</span> customer<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">145</td>
+        <td>atendente_02</td>
+        <td class="n">29/03/2026 03:05 → 29/03/2026 03:10</td>
+        <td class="n">0,597</td>
+        <td class="n">104</td>
+        <td>
+          <ul class="why"><li>falhas de autenticação: 3 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>horário incomum para o usuário: 03h (0,0% das janelas do histórico)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+3 falhas de autenticação<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">100</td>
+        <td>atendente_02</td>
+        <td class="n">27/03/2026 10:05 → 27/03/2026 10:10</td>
+        <td class="n">0,597</td>
+        <td class="n">106</td>
+        <td>
+          <ul class="why"><li>erros de permissão: 13 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>comandos com erro: 13 (acima do máximo do histórico; mediana 0, máximo 1)</li><li>DELETE: 5 (acima do máximo do histórico; mediana 0, máximo 0)</li></ul>
+        </td>
+        <td>
+          15 comandos
+          (10 SELECT, 0 INSERT, 0 UPDATE, 5 DELETE)<br>
+          40 linhas retornadas · 0 afetadas<br>
+13 erros (13 de permissão)<br><span class="muted">tabelas:</span> film, rental, sales_by_store, staff<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">150</td>
+        <td>analista_01</td>
+        <td class="n">29/03/2026 09:55 → 29/03/2026 10:00</td>
+        <td class="n">0,596</td>
+        <td class="n">108</td>
+        <td>
+          <ul class="why"><li>atividade no fim de semana (0,0% das janelas do histórico)</li><li>conexões: 1 (atingido em só 2,8% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          3 comandos
+          (3 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          112 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> actor, category, film, film_actor, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">112</td>
+        <td>gerente_02</td>
+        <td class="n">27/03/2026 16:40 → 27/03/2026 16:45</td>
+        <td class="n">0,594</td>
+        <td class="n">111</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (máx.): 10.000 (acima do máximo do histórico; mediana 9, máximo 50)</li><li>linhas retornadas (soma): 10.050 (acima do máximo do histórico; mediana 10, máximo 111)</li><li>formatos de consulta inéditos: 33,3% dos formatos da janela</li></ul>
+        </td>
+        <td>
+          3 comandos
+          (2 SELECT, 0 INSERT, 1 UPDATE, 0 DELETE)<br>
+          10.050 linhas retornadas · 1 afetadas<br>
+<span class="muted">tabelas:</span> customer, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">42</td>
+        <td>atendente_01</td>
+        <td class="n">25/03/2026 01:20 → 25/03/2026 01:30</td>
+        <td class="n">0,593</td>
+        <td class="n">113</td>
+        <td>
+          <ul class="why"><li>falhas de autenticação: 25 (acima do máximo do histórico; mediana 0, máximo 10)</li><li>horário incomum para o usuário: 01h (0,0% das janelas do histórico)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">25/03/2026 01:20</td><td class="n">0,593</td><td>falhas de autenticação: 25 (acima do máximo do histórico; mediana 0, máximo 10) | horário incomum para o usuário: 01h (0,0% das janelas do histórico)</td></tr>
+                <tr><td class="n">25/03/2026 01:25</td><td class="n">0,593</td><td>horário incomum para o usuário: 01h (0,0% das janelas do histórico) | falhas de autenticação: 15 (acima do máximo do histórico; mediana 0, máximo 10)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+40 falhas de autenticação<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">57</td>
+        <td>analista_01</td>
+        <td class="n">25/03/2026 15:55 → 25/03/2026 16:00</td>
+        <td class="n">0,593</td>
+        <td class="n">116</td>
+        <td>
+          <ul class="why"><li>comandos: 7 (atingido em só 0,2% das janelas do histórico; mediana 1, máximo 7)</li><li>SELECT: 7 (atingido em só 0,2% das janelas do histórico; mediana 1, máximo 7)</li><li>tabelas distintas: 9 (atingido em só 0,8% das janelas do histórico; mediana 3, máximo 9)</li></ul>
+        </td>
+        <td>
+          7 comandos
+          (7 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          178 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> actor, category, film, film_actor, film_category, inventory, payment, rental, rental_by_category<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">12</td>
+        <td>analista_02</td>
+        <td class="n">23/03/2026 13:40 → 23/03/2026 13:45</td>
+        <td class="n">0,593</td>
+        <td class="n">117</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 0,4% das janelas do histórico; mediana 0, máximo 1)</li><li>comandos com erro: 1 (atingido em só 0,6% das janelas do histórico; mediana 0, máximo 1)</li><li>duração máx. (ms): 28,0 (atingido em só 4,3% das janelas do histórico; mediana 3,9, máximo 51,7)</li></ul>
+        </td>
+        <td>
+          3 comandos
+          (2 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          32 linhas retornadas · 0 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">tabelas:</span> category, film, film_category, inventory, payment, rental, rental_by_category<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">33</td>
+        <td>atendente_02</td>
+        <td class="n">24/03/2026 13:00 → 24/03/2026 13:05</td>
+        <td class="n">0,592</td>
+        <td class="n">118</td>
+        <td>
+          <ul class="why"><li>linhas afetadas: 54 (acima do máximo do histórico; mediana 1, máximo 8)</li><li>formatos de consulta inéditos: 25,0% dos formatos da janela</li><li>outros comandos: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          7 comandos
+          (1 SELECT, 4 INSERT, 1 UPDATE, 0 DELETE)<br>
+          3 linhas retornadas · 54 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">tabelas:</span> address, city, customer, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">109</td>
+        <td>atendente_04</td>
+        <td class="n">27/03/2026 15:25 → 27/03/2026 15:30</td>
+        <td class="n">0,592</td>
+        <td class="n">119</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (máx.): 10.000 (acima do máximo do histórico; mediana 7, máximo 20)</li><li>linhas retornadas (soma): 10.024 (acima do máximo do histórico; mediana 12, máximo 131)</li><li>formatos de consulta inéditos: 14,3% dos formatos da janela</li></ul>
+        </td>
+        <td>
+          7 comandos
+          (3 SELECT, 4 INSERT, 0 UPDATE, 0 DELETE)<br>
+          10.024 linhas retornadas · 4 afetadas<br>
+<span class="muted">tabelas:</span> address, category, customer, film, film_category, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">73</td>
+        <td>atendente_03</td>
+        <td class="n">26/03/2026 03:45 → 26/03/2026 03:55</td>
+        <td class="n">0,591</td>
+        <td class="n">122</td>
+        <td>
+          <ul class="why"><li>falhas de autenticação: 18 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>IP de origem nunca usado pelo usuário: 172.30.30.50</li><li>horário incomum para o usuário: 03h (0,0% das janelas do histórico)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">26/03/2026 03:45</td><td class="n">0,589</td><td>falhas de autenticação: 22 (acima do máximo do histórico; mediana 0, máximo 0) | IP de origem nunca usado pelo usuário: 172.30.30.50 | horário incomum para o usuário: 03h (0,0% das janelas do histórico)</td></tr>
+                <tr><td class="n">26/03/2026 03:50</td><td class="n">0,591</td><td>falhas de autenticação: 18 (acima do máximo do histórico; mediana 0, máximo 0) | IP de origem nunca usado pelo usuário: 172.30.30.50 | horário incomum para o usuário: 03h (0,0% das janelas do histórico)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+40 falhas de autenticação<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">18</td>
+        <td>gerente_01</td>
+        <td class="n">23/03/2026 18:05 → 23/03/2026 18:20</td>
+        <td class="n">0,589</td>
+        <td class="n">123</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 18h (1,6% das janelas do histórico)</li><li>DELETE: 1 (atingido em só 2,6% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">23/03/2026 18:05</td><td class="n">0,589</td><td>horário incomum para o usuário: 18h (1,6% das janelas do histórico) | DELETE: 1 (atingido em só 2,6% das janelas do histórico; mediana 0, máximo 1)</td></tr>
+                <tr><td class="n">23/03/2026 18:15</td><td class="n">0,571</td><td>linhas retornadas (máx.): 2.000 (acima do máximo do histórico; mediana 10, máximo 50) | linhas retornadas (soma): 2.007 (acima do máximo do histórico; mediana 10, máximo 113) | formatos de consulta inéditos: 33,3% dos formatos da janela</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          4 comandos
+          (2 SELECT, 0 INSERT, 1 UPDATE, 1 DELETE)<br>
+          2.007 linhas retornadas · 2 afetadas<br>
+<span class="muted">tabelas:</span> film, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">45</td>
+        <td>gerente_02</td>
+        <td class="n">25/03/2026 05:15 → 25/03/2026 05:25</td>
+        <td class="n">0,589</td>
+        <td class="n">127</td>
+        <td>
+          <ul class="why"><li>falhas de autenticação: 9 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>horário incomum para o usuário: 05h (0,0% das janelas do histórico)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">25/03/2026 05:15</td><td class="n">0,568</td><td>falhas de autenticação: 1 (acima do máximo do histórico; mediana 0, máximo 0) | horário incomum para o usuário: 05h (0,0% das janelas do histórico)</td></tr>
+                <tr><td class="n">25/03/2026 05:20</td><td class="n">0,589</td><td>falhas de autenticação: 9 (acima do máximo do histórico; mediana 0, máximo 0) | horário incomum para o usuário: 05h (0,0% das janelas do histórico)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+10 falhas de autenticação<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">118</td>
+        <td>gerente_01</td>
+        <td class="n">27/03/2026 22:40 → 27/03/2026 22:50</td>
+        <td class="n">0,589</td>
+        <td class="n">128</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 22h (0,0% das janelas do histórico)</li><li>duração máx. (ms): 16,0 (atingido em só 1,3% das janelas do histórico; mediana 3,1, máximo 21,0)</li><li>linhas retornadas (soma): 62 (atingido em só 5,0% das janelas do histórico; mediana 10, máximo 113)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">27/03/2026 22:40</td><td class="n">0,560</td><td>horário incomum para o usuário: 22h (0,0% das janelas do histórico) | conexões: 1 (atingido em só 3,2% das janelas do histórico; mediana 0, máximo 1)</td></tr>
+                <tr><td class="n">27/03/2026 22:45</td><td class="n">0,589</td><td>horário incomum para o usuário: 22h (0,0% das janelas do histórico) | duração máx. (ms): 16,0 (atingido em só 1,3% das janelas do histórico; mediana 3,1, máximo 21,0) | linhas retornadas (soma): 62 (atingido em só 5,0% das janelas do histórico; mediana 10, máximo 113)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          7 comandos
+          (5 SELECT, 0 INSERT, 2 UPDATE, 0 DELETE)<br>
+          64 linhas retornadas · 2 afetadas<br>
+<span class="muted">tabelas:</span> address, city, customer, film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">72</td>
+        <td>analista_02</td>
+        <td class="n">26/03/2026 02:05 → 26/03/2026 02:20</td>
+        <td class="n">0,587</td>
+        <td class="n">130</td>
+        <td>
+          <ul class="why"><li>falhas de autenticação: 26 (acima do máximo do histórico; mediana 0, máximo 8)</li><li>horário incomum para o usuário: 02h (0,0% das janelas do histórico)</li></ul>
+          <details>
+            <summary>3 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">26/03/2026 02:05</td><td class="n">0,587</td><td>horário incomum para o usuário: 02h (0,0% das janelas do histórico) | falhas de autenticação: 8 (atingido em só 0,2% das janelas do histórico; mediana 0, máximo 8)</td></tr>
+                <tr><td class="n">26/03/2026 02:10</td><td class="n">0,587</td><td>falhas de autenticação: 26 (acima do máximo do histórico; mediana 0, máximo 8) | horário incomum para o usuário: 02h (0,0% das janelas do histórico)</td></tr>
+                <tr><td class="n">26/03/2026 02:15</td><td class="n">0,583</td><td>horário incomum para o usuário: 02h (0,0% das janelas do histórico) | falhas de autenticação: 6 (atingido em só 0,2% das janelas do histórico; mediana 0, máximo 8)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+40 falhas de autenticação<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">96</td>
+        <td>analista_02</td>
+        <td class="n">27/03/2026 05:55 → 27/03/2026 06:05</td>
+        <td class="n">0,587</td>
+        <td class="n">132</td>
+        <td>
+          <ul class="why"><li>falhas de autenticação: 9 (acima do máximo do histórico; mediana 0, máximo 8)</li><li>horário incomum para o usuário: 05h (0,4% das janelas do histórico)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">27/03/2026 05:55</td><td class="n">0,587</td><td>falhas de autenticação: 9 (acima do máximo do histórico; mediana 0, máximo 8) | horário incomum para o usuário: 05h (0,4% das janelas do histórico)</td></tr>
+                <tr><td class="n">27/03/2026 06:00</td><td class="n">0,569</td><td>horário incomum para o usuário: 06h (0,0% das janelas do histórico) | falhas de autenticação: 1 (atingido em só 0,4% das janelas do histórico; mediana 0, máximo 8)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+10 falhas de autenticação<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">87</td>
+        <td>gerente_02</td>
+        <td class="n">26/03/2026 16:45 → 26/03/2026 16:50</td>
+        <td class="n">0,586</td>
+        <td class="n">133</td>
+        <td>
+          <ul class="why"><li>DELETE: 1 (atingido em só 1,8% das janelas do histórico; mediana 0, máximo 7)</li><li>linhas afetadas: 2 (atingido em só 2,1% das janelas do histórico; mediana 0, máximo 2)</li></ul>
+        </td>
+        <td>
+          2 comandos
+          (0 SELECT, 0 INSERT, 1 UPDATE, 1 DELETE)<br>
+          0 linhas retornadas · 2 afetadas<br>
+<span class="muted">tabelas:</span> customer, payment<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">158</td>
+        <td>atendente_04</td>
+        <td class="n">29/03/2026 23:10 → 29/03/2026 23:15</td>
+        <td class="n">0,586</td>
+        <td class="n">134</td>
+        <td>
+          <ul class="why"><li>IP de origem nunca usado pelo usuário: 172.30.30.50</li><li>horário incomum para o usuário: 23h (0,0% das janelas do histórico)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">97</td>
+        <td>svc_locadora</td>
+        <td class="n">27/03/2026 07:00 → 27/03/2026 07:05</td>
+        <td class="n">0,586</td>
+        <td class="n">135</td>
+        <td>
+          <ul class="why"><li>linhas afetadas: 502 (acima do máximo do histórico; mediana 0, máximo 52)</li><li>UPDATE: 1 (atingido em só &lt;0,1% das janelas do histórico; mediana 0, máximo 1)</li><li>duração máx. (ms): 4,5 (atingido em só &lt;0,1% das janelas do histórico; mediana 0,5, máximo 7,3)</li></ul>
+        </td>
+        <td>
+          8 comandos
+          (5 SELECT, 2 INSERT, 1 UPDATE, 0 DELETE)<br>
+          44 linhas retornadas · 502 afetadas<br>
+<span class="muted">tabelas:</span> actor, customer, film, film_actor, film_category, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">41</td>
+        <td>atendente_01</td>
+        <td class="n">25/03/2026 00:20 → 25/03/2026 00:25</td>
+        <td class="n">0,585</td>
+        <td class="n">136</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 00h (0,0% das janelas do histórico)</li><li>falhas de autenticação: 3 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+3 falhas de autenticação<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">38</td>
+        <td>svc_locadora</td>
+        <td class="n">24/03/2026 19:00 → 24/03/2026 19:05</td>
+        <td class="n">0,585</td>
+        <td class="n">137</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 265 (atingido em só 0,3% das janelas do histórico; mediana 61, máximo 10.072)</li><li>comandos: 27 (atingido em só 0,5% das janelas do histórico; mediana 7, máximo 36)</li><li>SELECT: 21 (atingido em só 1,6% das janelas do histórico; mediana 6, máximo 31)</li></ul>
+        </td>
+        <td>
+          27 comandos
+          (21 SELECT, 6 INSERT, 0 UPDATE, 0 DELETE)<br>
+          265 linhas retornadas · 6 afetadas<br>
+<span class="muted">tabelas:</span> actor, customer, film, film_actor, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">9</td>
+        <td>gerente_01</td>
+        <td class="n">23/03/2026 11:40 → 23/03/2026 11:45</td>
+        <td class="n">0,585</td>
+        <td class="n">138</td>
+        <td>
+          <ul class="why"><li>erros de permissão: 1 (acima do máximo do histórico; mediana 0, máximo 0)</li><li>formatos de consulta inéditos: 100,0% dos formatos da janela</li><li>comandos com erro: 1 (atingido em só 0,4% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          1 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 1 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+1 erros (1 de permissão)<br><span class="muted">tabelas:</span> rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">103</td>
+        <td>analista_02</td>
+        <td class="n">27/03/2026 13:10 → 27/03/2026 13:35</td>
+        <td class="n">0,584</td>
+        <td class="n">139</td>
+        <td>
+          <ul class="why"><li>formatos de consulta inéditos: 100,0% dos formatos da janela</li><li>comandos: 8 (acima do máximo do histórico; mediana 1, máximo 5)</li><li>SELECT: 8 (acima do máximo do histórico; mediana 1, máximo 5)</li></ul>
+          <details>
+            <summary>5 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">27/03/2026 13:10</td><td class="n">0,568</td><td>comandos: 8 (acima do máximo do histórico; mediana 1, máximo 5) | SELECT: 8 (acima do máximo do histórico; mediana 1, máximo 5) | formatos de consulta inéditos: 50,0% dos formatos da janela</td></tr>
+                <tr><td class="n">27/03/2026 13:15</td><td class="n">0,578</td><td>formatos de consulta inéditos: 100,0% dos formatos da janela | comandos: 8 (acima do máximo do histórico; mediana 1, máximo 5) | SELECT: 8 (acima do máximo do histórico; mediana 1, máximo 5)</td></tr>
+                <tr><td class="n">27/03/2026 13:20</td><td class="n">0,569</td><td>comandos: 8 (acima do máximo do histórico; mediana 1, máximo 5) | SELECT: 8 (acima do máximo do histórico; mediana 1, máximo 5) | formatos de consulta inéditos: 50,0% dos formatos da janela</td></tr>
+                <tr><td class="n">27/03/2026 13:25</td><td class="n">0,584</td><td>formatos de consulta inéditos: 100,0% dos formatos da janela | comandos: 8 (acima do máximo do histórico; mediana 1, máximo 5) | SELECT: 8 (acima do máximo do histórico; mediana 1, máximo 5)</td></tr>
+                <tr><td class="n">27/03/2026 13:30</td><td class="n">0,575</td><td>formatos de consulta inéditos: 100,0% dos formatos da janela | comandos: 7 (acima do máximo do histórico; mediana 1, máximo 5) | SELECT: 7 (acima do máximo do histórico; mediana 1, máximo 5)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          39 comandos
+          (39 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          1.855 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">70</td>
+        <td>svc_locadora</td>
+        <td class="n">26/03/2026 01:00 → 26/03/2026 01:05</td>
+        <td class="n">0,583</td>
+        <td class="n">141</td>
+        <td>
+          <ul class="why"><li>nenhum atributo isolado fora do padrão do usuário; a combinação de valores é que é incomum</li></ul>
+        </td>
+        <td>
+          4 comandos
+          (0 SELECT, 4 INSERT, 0 UPDATE, 0 DELETE)<br>
+          2 linhas retornadas · 4 afetadas<br>
+<span class="muted">tabelas:</span> payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">129</td>
+        <td>analista_02</td>
+        <td class="n">28/03/2026 08:15 → 28/03/2026 08:30</td>
+        <td class="n">0,583</td>
+        <td class="n">142</td>
+        <td>
+          <ul class="why"><li>atividade no fim de semana (0,0% das janelas do histórico)</li><li>falhas de autenticação: 12 (acima do máximo do histórico; mediana 0, máximo 8)</li><li>horário incomum para o usuário: 08h (1,5% das janelas do histórico)</li></ul>
+          <details>
+            <summary>3 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">28/03/2026 08:15</td><td class="n">0,583</td><td>atividade no fim de semana (0,0% das janelas do histórico) | falhas de autenticação: 12 (acima do máximo do histórico; mediana 0, máximo 8) | horário incomum para o usuário: 08h (1,5% das janelas do histórico)</td></tr>
+                <tr><td class="n">28/03/2026 08:20</td><td class="n">0,581</td><td>falhas de autenticação: 21 (acima do máximo do histórico; mediana 0, máximo 8) | atividade no fim de semana (0,0% das janelas do histórico) | horário incomum para o usuário: 08h (1,5% das janelas do histórico)</td></tr>
+                <tr><td class="n">28/03/2026 08:25</td><td class="n">0,577</td><td>atividade no fim de semana (0,0% das janelas do histórico) | falhas de autenticação: 7 (atingido em só 0,2% das janelas do histórico; mediana 0, máximo 8) | horário incomum para o usuário: 08h (1,5% das janelas do histórico)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+40 falhas de autenticação<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">140</td>
+        <td>atendente_01</td>
+        <td class="n">28/03/2026 22:35 → 28/03/2026 22:40</td>
+        <td class="n">0,582</td>
+        <td class="n">143</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 22h (0,0% das janelas do histórico)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">11</td>
+        <td>gerente_02</td>
+        <td class="n">23/03/2026 13:00 → 23/03/2026 13:05</td>
+        <td class="n">0,582</td>
+        <td class="n">144</td>
+        <td>
+          <ul class="why"><li>linhas afetadas: 5 (acima do máximo do histórico; mediana 0, máximo 2)</li><li>formatos de consulta inéditos: 100,0% dos formatos da janela</li><li>DELETE: 1 (atingido em só 1,8% das janelas do histórico; mediana 0, máximo 7)</li></ul>
+        </td>
+        <td>
+          1 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 1 DELETE)<br>
+          0 linhas retornadas · 5 afetadas<br>
+<span class="muted">tabelas:</span> payment<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">22</td>
+        <td>atendente_01</td>
+        <td class="n">24/03/2026 01:25 → 24/03/2026 01:35</td>
+        <td class="n">0,581</td>
+        <td class="n">146</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 01h (0,0% das janelas do histórico)</li><li>falhas de autenticação: 2 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">24/03/2026 01:25</td><td class="n">0,581</td><td>horário incomum para o usuário: 01h (0,0% das janelas do histórico) | falhas de autenticação: 2 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</td></tr>
+                <tr><td class="n">24/03/2026 01:30</td><td class="n">0,572</td><td>horário incomum para o usuário: 01h (0,0% das janelas do histórico) | falhas de autenticação: 1 (atingido em só 0,3% das janelas do histórico; mediana 0, máximo 10)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+3 falhas de autenticação<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">5</td>
+        <td>atendente_02</td>
+        <td class="n">23/03/2026 08:55 → 23/03/2026 09:00</td>
+        <td class="n">0,580</td>
+        <td class="n">148</td>
+        <td>
+          <ul class="why"><li>duração máx. (ms): 7,7 (acima do máximo do histórico; mediana 0,6, máximo 7,3)</li><li>linhas retornadas (máx.): 10.000 (atingido em só 0,1% das janelas do histórico; mediana 6, máximo 10.000)</li><li>linhas retornadas (soma): 10.005 (atingido em só 0,1% das janelas do histórico; mediana 10, máximo 10.009)</li></ul>
+        </td>
+        <td>
+          3 comandos
+          (3 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          10.005 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> inventory, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">36</td>
+        <td>svc_locadora</td>
+        <td class="n">24/03/2026 13:50 → 24/03/2026 13:55</td>
+        <td class="n">0,579</td>
+        <td class="n">151</td>
+        <td>
+          <ul class="why"><li>duração máx. (ms): 7,6 (acima do máximo do histórico; mediana 0,5, máximo 7,3)</li><li>linhas retornadas (soma): 10.171 (acima do máximo do histórico; mediana 61, máximo 10.072)</li><li>linhas retornadas (máx.): 10.000 (atingido em só &lt;0,1% das janelas do histórico; mediana 24, máximo 10.000)</li></ul>
+        </td>
+        <td>
+          14 comandos
+          (14 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          10.171 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> actor, film, film_actor, film_category, inventory, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">16</td>
+        <td>analista_01</td>
+        <td class="n">23/03/2026 17:00 → 23/03/2026 17:05</td>
+        <td class="n">0,579</td>
+        <td class="n">153</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 148 (atingido em só 1,3% das janelas do histórico; mediana 16, máximo 16.005)</li><li>comandos: 4 (atingido em só 3,0% das janelas do histórico; mediana 1, máximo 7)</li><li>SELECT: 4 (atingido em só 3,0% das janelas do histórico; mediana 1, máximo 7)</li></ul>
+        </td>
+        <td>
+          4 comandos
+          (4 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          148 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> actor, category, film, film_actor, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">17</td>
+        <td>analista_02</td>
+        <td class="n">23/03/2026 17:00 → 23/03/2026 17:05</td>
+        <td class="n">0,578</td>
+        <td class="n">156</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 0,4% das janelas do histórico; mediana 0, máximo 1)</li><li>comandos com erro: 1 (atingido em só 0,6% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          2 comandos
+          (1 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          2 linhas retornadas · 0 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">tabelas:</span> inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">48</td>
+        <td>svc_locadora</td>
+        <td class="n">25/03/2026 09:35 → 25/03/2026 09:40</td>
+        <td class="n">0,578</td>
+        <td class="n">157</td>
+        <td>
+          <ul class="why"><li>SELECT: 51 (acima do máximo do histórico; mediana 6, máximo 31)</li><li>comandos: 57 (acima do máximo do histórico; mediana 7, máximo 36)</li><li>linhas retornadas (soma): 639 (atingido em só &lt;0,1% das janelas do histórico; mediana 61, máximo 10.072)</li></ul>
+        </td>
+        <td>
+          57 comandos
+          (51 SELECT, 6 INSERT, 0 UPDATE, 0 DELETE)<br>
+          639 linhas retornadas · 6 afetadas<br>
+<span class="muted">tabelas:</span> actor, customer, film, film_actor, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">60</td>
+        <td>analista_02</td>
+        <td class="n">25/03/2026 16:35 → 25/03/2026 16:40</td>
+        <td class="n">0,576</td>
+        <td class="n">160</td>
+        <td>
+          <ul class="why"><li>comandos: 5 (atingido em só 0,4% das janelas do histórico; mediana 1, máximo 5)</li><li>SELECT: 5 (atingido em só 0,4% das janelas do histórico; mediana 1, máximo 5)</li><li>linhas retornadas (soma): 156 (atingido em só 2,0% das janelas do histórico; mediana 16, máximo 15.994)</li></ul>
+        </td>
+        <td>
+          5 comandos
+          (5 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          156 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> actor, category, film, film_actor, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">29</td>
+        <td>atendente_01</td>
+        <td class="n">24/03/2026 11:05 → 24/03/2026 11:10</td>
+        <td class="n">0,576</td>
+        <td class="n">161</td>
+        <td>
+          <ul class="why"><li>linhas afetadas: 500 (acima do máximo do histórico; mediana 1, máximo 8)</li><li>formatos de consulta inéditos: 100,0% dos formatos da janela</li><li>duração máx. (ms): 8,3 (acima do máximo do histórico; mediana 0,6, máximo 5,6)</li></ul>
+        </td>
+        <td>
+          1 comandos
+          (0 SELECT, 0 INSERT, 1 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 500 afetadas<br>
+<span class="muted">tabelas:</span> rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">65</td>
+        <td>svc_locadora</td>
+        <td class="n">25/03/2026 20:20 → 25/03/2026 20:25</td>
+        <td class="n">0,576</td>
+        <td class="n">162</td>
+        <td>
+          <ul class="why"><li>comandos: 36 (atingido em só &lt;0,1% das janelas do histórico; mediana 7, máximo 36)</li><li>linhas retornadas (soma): 365 (atingido em só &lt;0,1% das janelas do histórico; mediana 61, máximo 10.072)</li><li>SELECT: 28 (atingido em só 0,1% das janelas do histórico; mediana 6, máximo 31)</li></ul>
+        </td>
+        <td>
+          36 comandos
+          (28 SELECT, 8 INSERT, 0 UPDATE, 0 DELETE)<br>
+          365 linhas retornadas · 8 afetadas<br>
+<span class="muted">tabelas:</span> actor, customer, film, film_actor, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">75</td>
+        <td>atendente_04</td>
+        <td class="n">26/03/2026 07:45 → 26/03/2026 07:50</td>
+        <td class="n">0,575</td>
+        <td class="n">165</td>
+        <td>
+          <ul class="why"><li>IP de origem nunca usado pelo usuário: 172.30.30.50</li><li>horário incomum para o usuário: 07h (0,0% das janelas do histórico)</li><li>falhas de autenticação: 3 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+3 falhas de autenticação<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">107</td>
+        <td>atendente_04</td>
+        <td class="n">27/03/2026 14:10 → 27/03/2026 14:15</td>
+        <td class="n">0,575</td>
+        <td class="n">166</td>
+        <td>
+          <ul class="why"><li>linhas afetadas: 502 (acima do máximo do histórico; mediana 1, máximo 10)</li><li>duração máx. (ms): 9,8 (acima do máximo do histórico; mediana 0,6, máximo 6,9)</li><li>formatos de consulta inéditos: 25,0% dos formatos da janela</li></ul>
+        </td>
+        <td>
+          5 comandos
+          (2 SELECT, 0 INSERT, 3 UPDATE, 0 DELETE)<br>
+          2 linhas retornadas · 502 afetadas<br>
+<span class="muted">tabelas:</span> address, city, customer, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">10</td>
+        <td>atendente_03</td>
+        <td class="n">23/03/2026 12:55 → 23/03/2026 13:00</td>
+        <td class="n">0,574</td>
+        <td class="n">167</td>
+        <td>
+          <ul class="why"><li>linhas afetadas: 502 (acima do máximo do histórico; mediana 1, máximo 8)</li><li>duração máx. (ms): 10,4 (acima do máximo do histórico; mediana 0,6, máximo 7,0)</li><li>formatos de consulta inéditos: 20,0% dos formatos da janela</li></ul>
+        </td>
+        <td>
+          5 comandos
+          (2 SELECT, 2 INSERT, 1 UPDATE, 0 DELETE)<br>
+          3 linhas retornadas · 502 afetadas<br>
+<span class="muted">tabelas:</span> address, city, customer, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">39</td>
+        <td>svc_locadora</td>
+        <td class="n">24/03/2026 20:00 → 24/03/2026 20:05</td>
+        <td class="n">0,573</td>
+        <td class="n">170</td>
+        <td>
+          <ul class="why"><li>INSERT: 10 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 12)</li><li>linhas afetadas: 10 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 52)</li></ul>
+        </td>
+        <td>
+          17 comandos
+          (7 SELECT, 10 INSERT, 0 UPDATE, 0 DELETE)<br>
+          7 linhas retornadas · 10 afetadas<br>
+<span class="muted">tabelas:</span> customer, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">83</td>
+        <td>gerente_02</td>
+        <td class="n">26/03/2026 12:55 → 26/03/2026 13:00</td>
+        <td class="n">0,573</td>
+        <td class="n">171</td>
+        <td>
+          <ul class="why"><li>linhas afetadas: 500 (acima do máximo do histórico; mediana 0, máximo 2)</li><li>formatos de consulta inéditos: 50,0% dos formatos da janela</li><li>DELETE: 1 (atingido em só 1,8% das janelas do histórico; mediana 0, máximo 7)</li></ul>
+        </td>
+        <td>
+          2 comandos
+          (1 SELECT, 0 INSERT, 0 UPDATE, 1 DELETE)<br>
+          15 linhas retornadas · 500 afetadas<br>
+<span class="muted">tabelas:</span> payment<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">149</td>
+        <td>gerente_02</td>
+        <td class="n">29/03/2026 07:45 → 29/03/2026 07:50</td>
+        <td class="n">0,572</td>
+        <td class="n">173</td>
+        <td>
+          <ul class="why"><li>atividade no fim de semana (0,0% das janelas do histórico)</li><li>horário incomum para o usuário: 07h (0,0% das janelas do histórico)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">15</td>
+        <td>gerente_02</td>
+        <td class="n">23/03/2026 16:00 → 23/03/2026 16:05</td>
+        <td class="n">0,570</td>
+        <td class="n">176</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 0,6% das janelas do histórico; mediana 0, máximo 1)</li><li>comandos com erro: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 13)</li><li>tabelas distintas: 7 (atingido em só 2,1% das janelas do histórico; mediana 3, máximo 7)</li></ul>
+        </td>
+        <td>
+          4 comandos
+          (3 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          13 linhas retornadas · 0 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">tabelas:</span> address, city, customer, film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">126</td>
+        <td>svc_locadora</td>
+        <td class="n">28/03/2026 05:00 → 28/03/2026 05:05</td>
+        <td class="n">0,570</td>
+        <td class="n">177</td>
+        <td>
+          <ul class="why"><li>nenhum atributo isolado fora do padrão do usuário; a combinação de valores é que é incomum</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">147</td>
+        <td>svc_locadora</td>
+        <td class="n">29/03/2026 05:00 → 29/03/2026 05:05</td>
+        <td class="n">0,570</td>
+        <td class="n">178</td>
+        <td>
+          <ul class="why"><li>nenhum atributo isolado fora do padrão do usuário; a combinação de valores é que é incomum</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">125</td>
+        <td>svc_locadora</td>
+        <td class="n">28/03/2026 02:00 → 28/03/2026 02:05</td>
+        <td class="n">0,569</td>
+        <td class="n">179</td>
+        <td>
+          <ul class="why"><li>nenhum atributo isolado fora do padrão do usuário; a combinação de valores é que é incomum</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">143</td>
+        <td>svc_locadora</td>
+        <td class="n">29/03/2026 02:00 → 29/03/2026 02:05</td>
+        <td class="n">0,569</td>
+        <td class="n">180</td>
+        <td>
+          <ul class="why"><li>nenhum atributo isolado fora do padrão do usuário; a combinação de valores é que é incomum</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">128</td>
+        <td>atendente_01</td>
+        <td class="n">28/03/2026 08:00 → 28/03/2026 08:05</td>
+        <td class="n">0,569</td>
+        <td class="n">181</td>
+        <td>
+          <ul class="why"><li>conexões: 1 (atingido em só 2,5% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">106</td>
+        <td>analista_02</td>
+        <td class="n">27/03/2026 13:55 → 27/03/2026 14:00</td>
+        <td class="n">0,569</td>
+        <td class="n">183</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 0,4% das janelas do histórico; mediana 0, máximo 1)</li><li>comandos com erro: 1 (atingido em só 0,6% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          2 comandos
+          (1 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          2 linhas retornadas · 0 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">tabelas:</span> inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">115</td>
+        <td>atendente_04</td>
+        <td class="n">27/03/2026 17:30 → 27/03/2026 17:35</td>
+        <td class="n">0,569</td>
+        <td class="n">184</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 439 (acima do máximo do histórico; mediana 12, máximo 131)</li><li>linhas retornadas (máx.): 50 (acima do máximo do histórico; mediana 7, máximo 20)</li><li>formatos de consulta inéditos: 11,1% dos formatos da janela</li></ul>
+        </td>
+        <td>
+          19 comandos
+          (14 SELECT, 4 INSERT, 1 UPDATE, 0 DELETE)<br>
+          439 linhas retornadas · 5 afetadas<br>
+<span class="muted">tabelas:</span> address, city, customer, film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">74</td>
+        <td>analista_01</td>
+        <td class="n">26/03/2026 06:55 → 26/03/2026 07:05</td>
+        <td class="n">0,569</td>
+        <td class="n">185</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 06h (0,0% das janelas do histórico)</li><li>falhas de autenticação: 2 (atingido em só 0,4% das janelas do histórico; mediana 0, máximo 8)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">26/03/2026 06:55</td><td class="n">0,569</td><td>horário incomum para o usuário: 06h (0,0% das janelas do histórico) | falhas de autenticação: 2 (atingido em só 0,4% das janelas do histórico; mediana 0, máximo 8)</td></tr>
+                <tr><td class="n">26/03/2026 07:00</td><td class="n">0,561</td><td>horário incomum para o usuário: 07h (0,0% das janelas do histórico) | falhas de autenticação: 1 (atingido em só 0,4% das janelas do histórico; mediana 0, máximo 8)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+3 falhas de autenticação<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">81</td>
+        <td>svc_locadora</td>
+        <td class="n">26/03/2026 11:40 → 26/03/2026 11:45</td>
+        <td class="n">0,568</td>
+        <td class="n">187</td>
+        <td>
+          <ul class="why"><li>duração máx. (ms): 7,9 (acima do máximo do histórico; mediana 0,5, máximo 7,3)</li><li>linhas retornadas (máx.): 10.000 (atingido em só &lt;0,1% das janelas do histórico; mediana 24, máximo 10.000)</li><li>linhas retornadas (soma): 10.065 (atingido em só &lt;0,1% das janelas do histórico; mediana 61, máximo 10.072)</li></ul>
+        </td>
+        <td>
+          6 comandos
+          (6 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          10.065 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> customer, film, film_category, inventory, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">122</td>
+        <td>svc_locadora</td>
+        <td class="n">28/03/2026 00:00 → 28/03/2026 00:05</td>
+        <td class="n">0,567</td>
+        <td class="n">190</td>
+        <td>
+          <ul class="why"><li>nenhum atributo isolado fora do padrão do usuário; a combinação de valores é que é incomum</li></ul>
+        </td>
+        <td>
+          1 comandos
+          (1 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> inventory<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">82</td>
+        <td>analista_02</td>
+        <td class="n">26/03/2026 12:35 → 26/03/2026 12:40</td>
+        <td class="n">0,566</td>
+        <td class="n">191</td>
+        <td>
+          <ul class="why"><li>formatos de consulta inéditos: 100,0% dos formatos da janela</li><li>comandos: 6 (acima do máximo do histórico; mediana 1, máximo 5)</li><li>SELECT: 6 (acima do máximo do histórico; mediana 1, máximo 5)</li></ul>
+        </td>
+        <td>
+          6 comandos
+          (6 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          300 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> payment<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">133</td>
+        <td>atendente_02</td>
+        <td class="n">28/03/2026 11:40 → 28/03/2026 11:45</td>
+        <td class="n">0,564</td>
+        <td class="n">194</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 1)</li><li>comandos com erro: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          8 comandos
+          (5 SELECT, 2 INSERT, 0 UPDATE, 0 DELETE)<br>
+          10 linhas retornadas · 2 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">tabelas:</span> address, city, customer, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">78</td>
+        <td>gerente_01</td>
+        <td class="n">26/03/2026 09:10 → 26/03/2026 09:15</td>
+        <td class="n">0,564</td>
+        <td class="n">195</td>
+        <td>
+          <ul class="why"><li>DELETE: 1 (atingido em só 2,6% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          1 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 1 DELETE)<br>
+          0 linhas retornadas · 1 afetadas<br>
+<span class="muted">tabelas:</span> payment<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">121</td>
+        <td>atendente_04</td>
+        <td class="n">27/03/2026 23:30 → 27/03/2026 23:35</td>
+        <td class="n">0,564</td>
+        <td class="n">196</td>
+        <td>
+          <ul class="why"><li>IP de origem nunca usado pelo usuário: 172.30.30.50</li><li>horário incomum para o usuário: 23h (0,0% das janelas do histórico)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">146</td>
+        <td>svc_locadora</td>
+        <td class="n">29/03/2026 04:00 → 29/03/2026 04:05</td>
+        <td class="n">0,564</td>
+        <td class="n">197</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 04h (2,2% das janelas do histórico)</li></ul>
+        </td>
+        <td>
+          1 comandos
+          (1 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> inventory<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">132</td>
+        <td>atendente_01</td>
+        <td class="n">28/03/2026 11:15 → 28/03/2026 11:20</td>
+        <td class="n">0,563</td>
+        <td class="n">198</td>
+        <td>
+          <ul class="why"><li>conexões: 1 (atingido em só 2,5% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">47</td>
+        <td>atendente_04</td>
+        <td class="n">25/03/2026 09:30 → 25/03/2026 09:40</td>
+        <td class="n">0,563</td>
+        <td class="n">199</td>
+        <td>
+          <ul class="why"><li>IP de origem nunca usado pelo usuário: 172.30.30.50</li><li>horário incomum para o usuário: 09h (0,0% das janelas do histórico)</li><li>falhas de autenticação: 2 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">25/03/2026 09:30</td><td class="n">0,556</td><td>IP de origem nunca usado pelo usuário: 172.30.30.50 | horário incomum para o usuário: 09h (0,0% das janelas do histórico) | falhas de autenticação: 1 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</td></tr>
+                <tr><td class="n">25/03/2026 09:35</td><td class="n">0,563</td><td>IP de origem nunca usado pelo usuário: 172.30.30.50 | horário incomum para o usuário: 09h (0,0% das janelas do histórico) | falhas de autenticação: 2 (atingido em só 0,1% das janelas do histórico; mediana 0, máximo 10)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+3 falhas de autenticação<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">80</td>
+        <td>gerente_02</td>
+        <td class="n">26/03/2026 09:30 → 26/03/2026 09:35</td>
+        <td class="n">0,563</td>
+        <td class="n">200</td>
+        <td>
+          <ul class="why"><li>linhas afetadas: 5 (acima do máximo do histórico; mediana 0, máximo 2)</li><li>formatos de consulta inéditos: 33,3% dos formatos da janela</li><li>duração máx. (ms): 15,9 (atingido em só 1,5% das janelas do histórico; mediana 2,8, máximo 30,3)</li></ul>
+        </td>
+        <td>
+          3 comandos
+          (2 SELECT, 0 INSERT, 0 UPDATE, 1 DELETE)<br>
+          70 linhas retornadas · 5 afetadas<br>
+<span class="muted">tabelas:</span> customer, film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">52</td>
+        <td>atendente_01</td>
+        <td class="n">25/03/2026 10:40 → 25/03/2026 10:45</td>
+        <td class="n">0,563</td>
+        <td class="n">201</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 1,7% das janelas do histórico; mediana 0, máximo 2)</li><li>comandos com erro: 1 (atingido em só 2,2% das janelas do histórico; mediana 0, máximo 10)</li><li>UPDATE: 2 (atingido em só 3,4% das janelas do histórico; mediana 0, máximo 3)</li></ul>
+        </td>
+        <td>
+          7 comandos
+          (4 SELECT, 0 INSERT, 2 UPDATE, 0 DELETE)<br>
+          25 linhas retornadas · 2 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">tabelas:</span> address, category, city, customer, film, film_category, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">151</td>
+        <td>atendente_02</td>
+        <td class="n">29/03/2026 10:55 → 29/03/2026 11:05</td>
+        <td class="n">0,563</td>
+        <td class="n">202</td>
+        <td>
+          <ul class="why"><li>falhas de autenticação: 7 (acima do máximo do histórico; mediana 0, máximo 1)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">29/03/2026 10:55</td><td class="n">0,563</td><td>falhas de autenticação: 7 (acima do máximo do histórico; mediana 0, máximo 1)</td></tr>
+                <tr><td class="n">29/03/2026 11:00</td><td class="n">0,555</td><td>falhas de autenticação: 3 (acima do máximo do histórico; mediana 0, máximo 1)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+10 falhas de autenticação<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">44</td>
+        <td>atendente_01</td>
+        <td class="n">25/03/2026 04:15 → 25/03/2026 04:30</td>
+        <td class="n">0,561</td>
+        <td class="n">203</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 04h (0,0% das janelas do histórico)</li><li>linhas retornadas (soma): 65 (atingido em só 0,6% das janelas do histórico; mediana 11, máximo 2.020)</li><li>conexões: 1 (atingido em só 2,5% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+          <details>
+            <summary>2 janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+                <tr><td class="n">25/03/2026 04:15</td><td class="n">0,561</td><td>horário incomum para o usuário: 04h (0,0% das janelas do histórico) | linhas retornadas (soma): 65 (atingido em só 0,6% das janelas do histórico; mediana 11, máximo 2.020) | conexões: 1 (atingido em só 2,5% das janelas do histórico; mediana 0, máximo 1)</td></tr>
+                <tr><td class="n">25/03/2026 04:25</td><td class="n">0,556</td><td>horário incomum para o usuário: 04h (0,0% das janelas do histórico)</td></tr>
+              </tbody>
+            </table>
+          </details>
+        </td>
+        <td>
+          9 comandos
+          (7 SELECT, 2 INSERT, 0 UPDATE, 0 DELETE)<br>
+          65 linhas retornadas · 2 afetadas<br>
+<span class="muted">tabelas:</span> address, city, customer, film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">120</td>
+        <td>gerente_01</td>
+        <td class="n">27/03/2026 23:05 → 27/03/2026 23:10</td>
+        <td class="n">0,561</td>
+        <td class="n">205</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 23h (0,0% das janelas do histórico)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">130</td>
+        <td>atendente_01</td>
+        <td class="n">28/03/2026 08:30 → 28/03/2026 08:35</td>
+        <td class="n">0,560</td>
+        <td class="n">206</td>
+        <td>
+          <ul class="why"><li>linhas retornadas (soma): 2.044 (acima do máximo do histórico; mediana 11, máximo 2.020)</li><li>linhas retornadas (máx.): 2.000 (atingido em só 0,1% das janelas do histórico; mediana 7, máximo 2.000)</li></ul>
+        </td>
+        <td>
+          8 comandos
+          (7 SELECT, 0 INSERT, 1 UPDATE, 0 DELETE)<br>
+          2.044 linhas retornadas · 1 afetadas<br>
+<span class="muted">tabelas:</span> address, city, customer, film, inventory, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">69</td>
+        <td>atendente_02</td>
+        <td class="n">25/03/2026 23:10 → 25/03/2026 23:15</td>
+        <td class="n">0,560</td>
+        <td class="n">207</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 23h (0,0% das janelas do histórico)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">68</td>
+        <td>atendente_04</td>
+        <td class="n">25/03/2026 22:55 → 25/03/2026 23:00</td>
+        <td class="n">0,560</td>
+        <td class="n">208</td>
+        <td>
+          <ul class="why"><li>IP de origem nunca usado pelo usuário: 172.30.30.50</li><li>horário incomum para o usuário: 22h (0,0% das janelas do histórico)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">21</td>
+        <td>atendente_04</td>
+        <td class="n">23/03/2026 22:40 → 23/03/2026 22:45</td>
+        <td class="n">0,560</td>
+        <td class="n">210</td>
+        <td>
+          <ul class="why"><li>IP de origem nunca usado pelo usuário: 172.30.30.50</li><li>horário incomum para o usuário: 22h (0,0% das janelas do histórico)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">90</td>
+        <td>svc_locadora</td>
+        <td class="n">26/03/2026 17:20 → 26/03/2026 17:25</td>
+        <td class="n">0,559</td>
+        <td class="n">212</td>
+        <td>
+          <ul class="why"><li>SELECT: 65 (acima do máximo do histórico; mediana 6, máximo 31)</li><li>comandos: 69 (acima do máximo do histórico; mediana 7, máximo 36)</li><li>linhas retornadas (soma): 816 (atingido em só &lt;0,1% das janelas do histórico; mediana 61, máximo 10.072)</li></ul>
+        </td>
+        <td>
+          69 comandos
+          (65 SELECT, 4 INSERT, 0 UPDATE, 0 DELETE)<br>
+          816 linhas retornadas · 4 afetadas<br>
+<span class="muted">tabelas:</span> actor, customer, film, film_actor, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">51</td>
+        <td>gerente_01</td>
+        <td class="n">25/03/2026 10:35 → 25/03/2026 10:40</td>
+        <td class="n">0,559</td>
+        <td class="n">213</td>
+        <td>
+          <ul class="why"><li>DELETE: 1 (atingido em só 2,6% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          1 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 1 DELETE)<br>
+          0 linhas retornadas · 1 afetadas<br>
+<span class="muted">tabelas:</span> payment<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">26</td>
+        <td>gerente_02</td>
+        <td class="n">24/03/2026 09:35 → 24/03/2026 09:40</td>
+        <td class="n">0,558</td>
+        <td class="n">214</td>
+        <td>
+          <ul class="why"><li>DELETE: 1 (atingido em só 1,8% das janelas do histórico; mediana 0, máximo 7)</li></ul>
+        </td>
+        <td>
+          1 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 1 DELETE)<br>
+          0 linhas retornadas · 1 afetadas<br>
+<span class="muted">tabelas:</span> payment<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">24</td>
+        <td>svc_locadora</td>
+        <td class="n">24/03/2026 05:00 → 24/03/2026 05:05</td>
+        <td class="n">0,558</td>
+        <td class="n">215</td>
+        <td>
+          <ul class="why"><li>nenhum atributo isolado fora do padrão do usuário; a combinação de valores é que é incomum</li></ul>
+        </td>
+        <td>
+          2 comandos
+          (0 SELECT, 2 INSERT, 0 UPDATE, 0 DELETE)<br>
+          1 linhas retornadas · 2 afetadas<br>
+<span class="muted">tabelas:</span> payment, rental<br><span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">66</td>
+        <td>atendente_02</td>
+        <td class="n">25/03/2026 20:50 → 25/03/2026 20:55</td>
+        <td class="n">0,558</td>
+        <td class="n">216</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 20h (0,0% das janelas do histórico)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">77</td>
+        <td>atendente_02</td>
+        <td class="n">26/03/2026 08:35 → 26/03/2026 08:40</td>
+        <td class="n">0,557</td>
+        <td class="n">218</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 1)</li><li>comandos com erro: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          3 comandos
+          (0 SELECT, 2 INSERT, 0 UPDATE, 0 DELETE)<br>
+          1 linhas retornadas · 2 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">tabelas:</span> payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">119</td>
+        <td>svc_locadora</td>
+        <td class="n">27/03/2026 23:00 → 27/03/2026 23:05</td>
+        <td class="n">0,557</td>
+        <td class="n">219</td>
+        <td>
+          <ul class="why"><li>nenhum atributo isolado fora do padrão do usuário; a combinação de valores é que é incomum</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.20.50        </td>
+      </tr>
+      <tr>
+        <td class="n">92</td>
+        <td>atendente_02</td>
+        <td class="n">26/03/2026 22:15 → 26/03/2026 22:20</td>
+        <td class="n">0,557</td>
+        <td class="n">220</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 22h (0,0% das janelas do histórico)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+      <tr>
+        <td class="n">20</td>
+        <td>atendente_03</td>
+        <td class="n">23/03/2026 22:30 → 23/03/2026 22:35</td>
+        <td class="n">0,557</td>
+        <td class="n">221</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 22h (0,0% das janelas do histórico)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">19</td>
+        <td>atendente_03</td>
+        <td class="n">23/03/2026 22:00 → 23/03/2026 22:05</td>
+        <td class="n">0,556</td>
+        <td class="n">224</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 22h (0,0% das janelas do histórico)</li><li>linhas afetadas: 7 (atingido em só 0,1% das janelas do histórico; mediana 1, máximo 8)</li><li>INSERT: 6 (atingido em só 0,8% das janelas do histórico; mediana 0, máximo 6)</li></ul>
+        </td>
+        <td>
+          12 comandos
+          (5 SELECT, 6 INSERT, 1 UPDATE, 0 DELETE)<br>
+          62 linhas retornadas · 7 afetadas<br>
+<span class="muted">tabelas:</span> address, city, customer, film, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">136</td>
+        <td>atendente_04</td>
+        <td class="n">28/03/2026 14:05 → 28/03/2026 14:10</td>
+        <td class="n">0,556</td>
+        <td class="n">225</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 1,3% das janelas do histórico; mediana 0, máximo 1)</li><li>comandos com erro: 1 (atingido em só 1,4% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          6 comandos
+          (5 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          14 linhas retornadas · 0 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">tabelas:</span> customer, inventory, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">6</td>
+        <td>gerente_02</td>
+        <td class="n">23/03/2026 09:30 → 23/03/2026 09:35</td>
+        <td class="n">0,556</td>
+        <td class="n">226</td>
+        <td>
+          <ul class="why"><li>erros de permissão: 1 (atingido em só 0,4% das janelas do histórico; mediana 0, máximo 13)</li><li>comandos com erro: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 13)</li><li>DELETE: 1 (atingido em só 1,8% das janelas do histórico; mediana 0, máximo 7)</li></ul>
+        </td>
+        <td>
+          4 comandos
+          (3 SELECT, 0 INSERT, 0 UPDATE, 1 DELETE)<br>
+          44 linhas retornadas · 0 afetadas<br>
+1 erros (1 de permissão)<br><span class="muted">tabelas:</span> film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">98</td>
+        <td>atendente_01</td>
+        <td class="n">27/03/2026 08:45 → 27/03/2026 08:50</td>
+        <td class="n">0,556</td>
+        <td class="n">228</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 1,7% das janelas do histórico; mediana 0, máximo 2)</li><li>comandos com erro: 1 (atingido em só 2,2% das janelas do histórico; mediana 0, máximo 10)</li></ul>
+        </td>
+        <td>
+          8 comandos
+          (3 SELECT, 4 INSERT, 0 UPDATE, 0 DELETE)<br>
+          43 linhas retornadas · 4 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">tabelas:</span> address, city, customer, film, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">152</td>
+        <td>gerente_01</td>
+        <td class="n">29/03/2026 13:15 → 29/03/2026 13:20</td>
+        <td class="n">0,556</td>
+        <td class="n">229</td>
+        <td>
+          <ul class="why"><li>atividade no fim de semana (0,0% das janelas do histórico)</li><li>duração máx. (ms): 18,8 (atingido em só 0,1% das janelas do histórico; mediana 3,1, máximo 21,0)</li><li>conexões: 1 (atingido em só 3,2% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          1 comandos
+          (1 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          2 linhas retornadas · 0 afetadas<br>
+<span class="muted">tabelas:</span> inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">32</td>
+        <td>atendente_04</td>
+        <td class="n">24/03/2026 12:45 → 24/03/2026 12:50</td>
+        <td class="n">0,555</td>
+        <td class="n">230</td>
+        <td>
+          <ul class="why"><li>horário incomum para o usuário: 12h (1,4% das janelas do histórico)</li><li>conexões: 1 (atingido em só 2,7% das janelas do histórico; mediana 0, máximo 1)</li></ul>
+        </td>
+        <td>
+          0 comandos
+          (0 SELECT, 0 INSERT, 0 UPDATE, 0 DELETE)<br>
+          0 linhas retornadas · 0 afetadas<br>
+<span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">35</td>
+        <td>atendente_02</td>
+        <td class="n">24/03/2026 13:50 → 24/03/2026 13:55</td>
+        <td class="n">0,555</td>
+        <td class="n">232</td>
+        <td>
+          <ul class="why"><li>outros comandos: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 1)</li><li>comandos com erro: 1 (atingido em só 1,0% das janelas do histórico; mediana 0, máximo 1)</li><li>tabelas distintas: 9 (atingido em só 2,4% das janelas do histórico; mediana 4, máximo 9)</li></ul>
+        </td>
+        <td>
+          11 comandos
+          (8 SELECT, 2 INSERT, 0 UPDATE, 0 DELETE)<br>
+          38 linhas retornadas · 2 afetadas<br>
+1 erros (0 de permissão)<br><span class="muted">tabelas:</span> address, category, city, customer, film, film_category, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.10.50        </td>
+      </tr>
+      <tr>
+        <td class="n">62</td>
+        <td>gerente_01</td>
+        <td class="n">25/03/2026 17:30 → 25/03/2026 17:35</td>
+        <td class="n">0,555</td>
+        <td class="n">233</td>
+        <td>
+          <ul class="why"><li>comandos: 8 (atingido em só 0,1% das janelas do histórico; mediana 2, máximo 8)</li><li>SELECT: 6 (atingido em só 1,0% das janelas do histórico; mediana 1, máximo 8)</li><li>UPDATE: 2 (atingido em só 2,2% das janelas do histórico; mediana 0, máximo 3)</li></ul>
+        </td>
+        <td>
+          8 comandos
+          (6 SELECT, 0 INSERT, 2 UPDATE, 0 DELETE)<br>
+          13 linhas retornadas · 2 afetadas<br>
+<span class="muted">tabelas:</span> address, city, customer, inventory, payment, rental<br><span class="muted">origem:</span> 172.30.30.50        </td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Configuração</h2>
+  <dl>
+    <dt>Modelo</dt><dd>Isolation Forest <code>ne500-ms1024-mf0.5-log1</code></dd>
+    <dt>Histórico (treino)</dt><dd>período de treino da simulação: 9109 janelas, 10 usuários</dd>
+    <dt>Limiar</dt><dd>0,554740 (escolhido na validação (melhor F1), semente 0 do experimento)</dd>
+    <dt>SACLA</dt><dd>versão 0.1.0</dd>
+  </dl>
+</main>
+</body>
+</html>

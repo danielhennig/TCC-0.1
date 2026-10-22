@@ -1,0 +1,154 @@
+{# Colunas com nome de método de dict (update...) são lidas com ep["coluna"], não ep.coluna. #}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ context.title }}</title>
+<style>
+  :root {
+    --bg: #ffffff; --surface: #f6f7f9; --text: #1d2330; --muted: #5b6475;
+    --border: #d9dde5; --accent: #2a5bd7; --warn-bg: #fff6e0; --warn-border: #e2b440;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14171d; --surface: #1d222b; --text: #e6e9ef; --muted: #a3abba;
+      --border: #333a47; --accent: #7aa2ff; --warn-bg: #2d2615; --warn-border: #8a6d1f;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 1200px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  h2 { font-size: 1.2rem; margin: 32px 0 8px; }
+  .muted { color: var(--muted); }
+  .notice {
+    background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: 8px;
+    padding: 10px 14px; margin: 16px 0;
+  }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; }
+  .stat b { display: block; font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+  th, td { padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  th { background: var(--surface); position: sticky; top: 0; }
+  td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  ul.why { margin: 0; padding-left: 18px; }
+  details summary { cursor: pointer; color: var(--accent); }
+  details table { margin-top: 6px; font-size: 0.85rem; }
+  code { font-size: 0.85em; }
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 16px; }
+  dt { color: var(--muted); }
+  dd { margin: 0; }
+  @media print { th { position: static; } details { display: block; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>{{ context.title }}</h1>
+  <div class="muted">Período analisado: {{ context.period }} · janelas de {{ context.window_minutes }} min</div>
+
+  <p class="notice">{{ disclaimer }}</p>
+
+  <div class="stats">
+    <div class="stat"><span class="muted">Janelas analisadas</span><b>{{ context.windows|num }}</b></div>
+    <div class="stat"><span class="muted">Usuários</span><b>{{ context.users|num }}</b></div>
+    <div class="stat"><span class="muted">Janelas sinalizadas</span><b>{{ totals.alerts|num }}</b></div>
+    <div class="stat"><span class="muted">Episódios</span><b>{{ totals.episodes|num }}</b></div>
+    <div class="stat"><span class="muted">Usuários com alerta</span><b>{{ totals.users_with_alerts|num }}</b></div>
+  </div>
+
+  <h2>Como ler</h2>
+  <ul>
+    <li><b>Score</b>: grau de anomalia dado pelo Isolation Forest (maior = mais atípico). Uma janela é sinalizada quando o score passa do limiar ({{ context.threshold|dec(4) }}; {{ context.threshold_origin }}).</li>
+    <li><b>Posição</b>: ordem da janela entre todas as janelas analisadas, da mais atípica (1) para a menos.</li>
+    <li><b>Principais desvios</b>: atributos da janela mais raros no histórico do próprio usuário. Descrevem o que mais foge do normal dele; não são a "razão interna" do modelo.</li>
+    <li><b>Episódio</b>: janelas sinalizadas seguidas do mesmo usuário, examinadas juntas.</li>
+  </ul>
+
+  <h2>Usuários</h2>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Usuário</th><th class="n">Janelas</th><th class="n">Janelas sinalizadas</th><th class="n">Episódios</th><th class="n">Janelas no histórico</th></tr></thead>
+    <tbody>
+    {% for u in users %}
+      <tr>
+        <td>{{ u.usuario }}{% if u.sem_historico %} <span class="muted">(sem histórico)</span>{% endif %}</td>
+        <td class="n">{{ u.janelas|num }}</td>
+        <td class="n">{{ u.alertas|num }}</td>
+        <td class="n">{{ u.episodios|num }}</td>
+        <td class="n">{{ u.janelas_historico|num }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <h2>Episódios, do mais atípico ao menos atípico</h2>
+  {% if shown < totals.episodes %}
+  <p class="muted">Mostrando {{ shown }} de {{ totals.episodes }} episódios; todos estão em <code>episodios.csv</code> e <code>alertas.csv</code>.</p>
+  {% endif %}
+  {% if episodes %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr>
+      <th class="n">#</th><th>Usuário</th><th>Início → fim</th><th class="n">Score máx.</th><th class="n">Posição</th>
+      <th>Principais desvios (janela de maior score)</th><th>Resumo</th>
+    </tr></thead>
+    <tbody>
+    {% for ep in episodes %}
+      <tr>
+        <td class="n">{{ ep.episodio }}</td>
+        <td>{{ ep.usuario }}</td>
+        <td class="n">{{ ep.inicio|when }} → {{ ep.fim|when }}</td>
+        <td class="n">{{ ep.score_max|dec(3) }}</td>
+        <td class="n">{{ ep.posicao|num }}</td>
+        <td>
+          <ul class="why">{% for item in ep.explicacao.split(" | ") %}<li>{{ item }}</li>{% endfor %}</ul>
+          {% if ep.janelas > 1 %}
+          <details>
+            <summary>{{ ep.janelas }} janelas</summary>
+            <table>
+              <thead><tr><th>Janela</th><th class="n">Score</th><th>Desvios</th></tr></thead>
+              <tbody>
+              {% for w in windows_by_episode[ep.episodio] %}
+                <tr><td class="n">{{ w.inicio|when }}</td><td class="n">{{ w.score|dec(3) }}</td><td>{{ w.explicacao }}</td></tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </details>
+          {% endif %}
+        </td>
+        <td>
+          {{ ep.comandos|num }} comandos
+          ({{ ep["select"]|num }} SELECT, {{ ep["insert"]|num }} INSERT, {{ ep["update"]|num }} UPDATE, {{ ep["delete"]|num }} DELETE)<br>
+          {{ ep.linhas_retornadas|num }} linhas retornadas · {{ ep.linhas_afetadas|num }} afetadas<br>
+          {% if ep.erros %}{{ ep.erros|num }} erros ({{ ep.erros_permissao|num }} de permissão)<br>{% endif %}
+          {% if ep.falhas_autenticacao %}{{ ep.falhas_autenticacao|num }} falhas de autenticação<br>{% endif %}
+          {% if ep.tabelas %}<span class="muted">tabelas:</span> {{ ep.tabelas.replace("|", ", ") }}<br>{% endif %}
+          {% if ep.ips %}<span class="muted">origem:</span> {{ ep.ips.replace("|", ", ") }}{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p>Nenhuma janela passou do limiar neste período.</p>
+  {% endif %}
+
+  <h2>Configuração</h2>
+  <dl>
+    <dt>Modelo</dt><dd>Isolation Forest <code>{{ context.model }}</code></dd>
+    <dt>Histórico (treino)</dt><dd>{{ context.history }}</dd>
+    <dt>Limiar</dt><dd>{{ context.threshold|dec(6) }} ({{ context.threshold_origin }})</dd>
+    <dt>SACLA</dt><dd>versão {{ version }}</dd>
+  </dl>
+</main>
+</body>
+</html>

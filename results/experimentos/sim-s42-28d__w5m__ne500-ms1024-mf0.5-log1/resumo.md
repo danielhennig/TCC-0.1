@@ -103,6 +103,6 @@ Configuração escolhida na validação: `{'n_estimators': 500, 'max_samples': 1
 
 - leitura e eventos: 5.7 s (36708 linhas/s)
 - agregação por janela: 3.2 s
-- treino do modelo: 0.43 s (média)
-- score do teste: 0.093 s (média)
+- treino do modelo: 0.44 s (média)
+- score do teste: 0.092 s (média)
 - busca em grade (validação): 72 s

@@ -164,7 +164,7 @@ def run_experiment(
     }
     for name, table in tables.items():
         table.to_csv(out / "tables" / f"{name}.csv", index=False, lineterminator="\n")
-    _save_scores(out, data, test, tuned, fired, config)
+    _save_scores(out, data, test, tuned, label_free, fired, config)
 
     metrics = {
         "exp_id": exp_id,
@@ -425,13 +425,19 @@ def _save_scores(
     data: pd.DataFrame,
     test: pd.DataFrame,
     tuned: Evaluation,
+    label_free: Evaluation,
     fired: pd.DataFrame,
     config: ModelConfig,
 ) -> None:
-    """Scores do teste (todas as sementes) e de todos os splits (primeira semente) + modelo."""
+    """Scores do teste (todas as sementes) e de todos os splits (primeira semente) + modelo.
+
+    score_seed<k>: Isolation Forest ajustado; score_lf_seed<k>: configuração sem rótulos.
+    """
     test_scores = test[ID_COLUMNS].copy()
     for seed, scores in tuned.scores.items():
         test_scores[f"score_seed{seed}"] = scores
+    for seed, scores in label_free.scores.items():
+        test_scores[f"score_lf_seed{seed}"] = scores
     test_scores = test_scores.join(fired.add_prefix("regra_"))
     test_scores.to_parquet(out / "scores" / "test_scores.parquet", index=False)
     model = tuned.first_model

@@ -15,7 +15,7 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 # Símbolos usados de propósito nos textos em português (tabelas da monografia).
-allowed-confusables = ["×", "∪"]
+allowed-confusables = ["×", "∪", "–"]
 
 [tool.mypy]
 python_version = "3.11"

@@ -1,0 +1,11 @@
+usuario,janelas,alertas,episodios,sem_historico,janelas_historico
+analista_02,322,34,16,False,539
+atendente_01,415,29,18,False,771
+gerente_01,311,29,17,False,681
+svc_locadora,1788,29,26,False,3520
+analista_01,282,25,15,False,532
+gerente_02,330,25,17,False,674
+atendente_04,410,23,17,False,791
+atendente_02,393,22,18,False,806
+atendente_03,403,9,7,False,773
+svc_batch,8,8,7,False,22

@@ -135,8 +135,8 @@
     "leitura_e_eventos_s": 5.66,
     "agregacao_s": 3.19,
     "linhas_por_segundo": 36708,
-    "treino_modelo_s_medio": 0.4274101082000925,
-    "score_teste_s_medio": 0.09331559919992287,
-    "busca_em_grade_s": 71.65936619700005
+    "treino_modelo_s_medio": 0.4375172822001332,
+    "score_teste_s_medio": 0.09232085089970496,
+    "busca_em_grade_s": 72.21983523900053
   }
 }

@@ -1,24 +1,4 @@
 model:
-  log1p_features:
-  - n_commands
-  - n_select
-  - n_insert
-  - n_update
-  - n_delete
-  - n_ddl
-  - n_other
-  - n_errors
-  - n_permission_denied
-  - n_auth_failures
-  - n_connections
-  - rows_returned_sum
-  - rows_returned_max
-  - rows_affected_sum
-  - duration_mean_ms
-  - duration_max_ms
-  - duration_p95_ms
-  - n_tables
-  - n_ips
   grid:
     n_estimators:
     - 100
@@ -132,6 +112,62 @@ sacla:
     - 6
     hour_smoothing: 1.0
     robust_scale_floor: 1.0
+  detector:
+    log1p_features:
+    - n_commands
+    - n_select
+    - n_insert
+    - n_update
+    - n_delete
+    - n_ddl
+    - n_other
+    - n_errors
+    - n_permission_denied
+    - n_auth_failures
+    - n_connections
+    - rows_returned_sum
+    - rows_returned_max
+    - rows_affected_sum
+    - duration_mean_ms
+    - duration_max_ms
+    - duration_p95_ms
+    - n_tables
+    - n_ips
+    n_estimators: 500
+    max_samples: 1024
+    max_features: 0.5
+    log1p: true
+    seed: 0
+    n_jobs: 1
+    train_alert_rate: 0.0144
+  report:
+    explain_features:
+    - n_commands
+    - n_select
+    - n_insert
+    - n_update
+    - n_delete
+    - n_ddl
+    - n_other
+    - n_errors
+    - n_permission_denied
+    - n_auth_failures
+    - n_connections
+    - rows_returned_sum
+    - rows_returned_max
+    - rows_affected_sum
+    - duration_max_ms
+    - n_tables
+    - n_ips
+    - hour_surprisal
+    - weekend
+    - new_tables_frac
+    - new_ips_frac
+    - new_query_shapes_frac
+    top_features: 3
+    max_tail_fraction: 0.05
+    episode_gap_windows: 1
+    max_html_episodes: 300
 run:
   run_id: sim-s42-28d
   seed: 42

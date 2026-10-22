@@ -247,7 +247,17 @@ def build_features(
     """Janelas com todos os atributos (FEATURE_COLUMNS) e os históricos usados."""
     windows = aggregate_windows(events, settings)
     baselines = fit_baselines(windows, settings, history_end_ms)
-    features = add_relative_features(windows, baselines, settings)
+    return _finish(add_relative_features(windows, baselines, settings)), baselines
+
+
+def features_with_baselines(
+    events: pd.DataFrame, settings: SaclaSettings, baselines: dict[str, UserBaseline]
+) -> pd.DataFrame:
+    """Janelas de um novo período com históricos já ajustados (uso real: `sacla score`)."""
+    return _finish(add_relative_features(aggregate_windows(events, settings), baselines, settings))
+
+
+def _finish(features: pd.DataFrame) -> pd.DataFrame:
     features["tables"] = features["tables_set"].map(lambda t: "|".join(sorted(t)))
     features["ips"] = features["ips_set"].map(lambda t: "|".join(sorted(t)))
     columns = [
@@ -259,7 +269,7 @@ def build_features(
         "tables",
         "ips",
     ]
-    return features[columns].reset_index(drop=True), baselines
+    return features[columns].reset_index(drop=True)
 
 
 def _add_time_features(out: pd.DataFrame, settings: SaclaSettings) -> None:

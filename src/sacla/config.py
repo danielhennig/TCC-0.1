@@ -64,10 +64,45 @@ class FeatureSettings:
 
 
 @dataclass(frozen=True)
+class DetectorSettings:
+    """Isolation Forest do uso real (`sacla fit`); a avaliação escolhe os seus em model.yaml."""
+
+    log1p_features: tuple[str, ...]
+    n_estimators: int
+    max_samples: int | float | str
+    max_features: float
+    log1p: bool
+    seed: int
+    n_jobs: int
+    train_alert_rate: float
+
+    def __post_init__(self) -> None:
+        if not 0 < self.train_alert_rate < 1:
+            raise ConfigError("detector.train_alert_rate deve estar entre 0 e 1 (exclusive)")
+
+
+@dataclass(frozen=True)
+class ReportSettings:
+    explain_features: tuple[str, ...]
+    top_features: int
+    max_tail_fraction: float
+    episode_gap_windows: int
+    max_html_episodes: int
+
+    def __post_init__(self) -> None:
+        if self.top_features <= 0 or self.max_html_episodes <= 0:
+            raise ConfigError("report.top_features e max_html_episodes devem ser positivos")
+        if not 0 < self.max_tail_fraction <= 1 or self.episode_gap_windows < 0:
+            raise ConfigError("report.max_tail_fraction em (0, 1] e episode_gap_windows >= 0")
+
+
+@dataclass(frozen=True)
 class SaclaSettings:
     reader: ReaderSettings
     events: EventSettings
     features: FeatureSettings
+    detector: DetectorSettings
+    report: ReportSettings
 
 
 def load_settings(path: Path | None = None) -> SaclaSettings:
@@ -75,6 +110,7 @@ def load_settings(path: Path | None = None) -> SaclaSettings:
     raw = load_yaml(path or CONFIG_DIR / "sacla.yaml")
     try:
         reader, events, features = raw["reader"], raw["events"], raw["features"]
+        detector, report = raw["detector"], raw["report"]
         settings = SaclaSettings(
             reader=ReaderSettings(
                 patterns=tuple(str(p) for p in reader["patterns"]),
@@ -100,6 +136,23 @@ def load_settings(path: Path | None = None) -> SaclaSettings:
                 weekend_days=frozenset(int(d) for d in features["weekend_days"]),
                 hour_smoothing=float(features["hour_smoothing"]),
                 robust_scale_floor=float(features["robust_scale_floor"]),
+            ),
+            detector=DetectorSettings(
+                log1p_features=tuple(str(f) for f in detector["log1p_features"]),
+                n_estimators=int(detector["n_estimators"]),
+                max_samples=detector["max_samples"],
+                max_features=float(detector["max_features"]),
+                log1p=bool(detector["log1p"]),
+                seed=int(detector["seed"]),
+                n_jobs=int(detector["n_jobs"]),
+                train_alert_rate=float(detector["train_alert_rate"]),
+            ),
+            report=ReportSettings(
+                explain_features=tuple(str(f) for f in report["explain_features"]),
+                top_features=int(report["top_features"]),
+                max_tail_fraction=float(report["max_tail_fraction"]),
+                episode_gap_windows=int(report["episode_gap_windows"]),
+                max_html_episodes=int(report["max_html_episodes"]),
             ),
         )
     except (KeyError, TypeError, ValueError, AttributeError, re.error) as exc:

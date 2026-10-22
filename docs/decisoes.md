@@ -241,8 +241,8 @@ conexão não denuncie o cenário. As ações de uma sessão nunca se intercalam
 anomalia não cai dentro de uma transação aberta por uma ação normal.
 
 **Quantidades** (para 28 dias): 20 cenários no treino (tipo e intensidade sorteados), 5 por
-tipo × intensidade na validação e 8 no teste, mais 10 do tipo inédito no teste. A distância
-mínima entre cenários do mesmo usuário é de 30 min.
+tipo × intensidade na validação e 8 no teste, mais 12 do tipo inédito no teste (um por papel ×
+intensidade, D37). A distância mínima entre cenários do mesmo usuário é de 30 min.
 
 **D23 — Rótulos isolados.** `events.parquet` (lido pelo executor e pelo retime) não tem
 nenhuma coluna de rótulo; o cenário de cada evento só serve para calcular o intervalo do
@@ -258,15 +258,18 @@ em `results/simulacao/sim-s42-28d/`):
 
 | Medida | Valor |
 |---|---|
-| Eventos / comandos / falhas de login | 110.410 / 107.581 / 733 |
+| Eventos / comandos / falhas de login | 110.738 / 107.909 / 733 |
 | Sessões (conexões) | 1.048 |
-| Cenários anômalos (treino / validação / teste) | 20 / 90 / 154 (144 + 10 do tipo inédito) |
-| Erros provocados (42501 / 42601) / erros inesperados | 320 / 127 / 0 |
-| Execução | 103 s (~1.070 eventos/s); pipeline completo ~2,5 min |
-| Log bruto / com gzip / remapeado com gzip | 434 MB (5 arquivos, com rotação) / 21 MB / 21 MB |
-| Linhas remapeadas / sem evento / fora de ordem | 207.177 / 0 / 0 |
-| Linhas do plano comparadas com o cliente / divergências | 93.910 / 0 |
-| Cenários coerentes com o log remapeado | 264 de 264 |
+| Cenários anômalos (treino / validação / teste) | 20 / 90 / 156 (144 + 12 do tipo inédito) |
+| Erros provocados (42501 / 42601) / erros inesperados | 324 / 127 / 0 |
+| Execução | 101 s (~1.100 eventos/s); pipeline completo ~2,5 min |
+| Log bruto / com gzip / remapeado com gzip | 427 MB (com rotação) / 21 MB / 21 MB |
+| Linhas remapeadas / sem evento / fora de ordem | 207.769 / 0 / 0 |
+| Linhas do plano comparadas com o cliente / divergências | 94.174 / 0 |
+| Cenários coerentes com o log remapeado | 266 de 266 |
+
+Valores da simulação refeita após as correções da D37 (a primeira versão tinha 264 cenários e
+números da mesma ordem).
 
 Atividade anômala (comandos e falhas de login dos cenários sobre o total de comandos, erros e
 falhas de login do split): treino 0,44%, validação 4,35%, teste 8,41%. O teste concentra mais
@@ -354,12 +357,14 @@ Notas:
   `test_window_crossing_history_end_is_not_part_of_history`.
 - **Sem rótulos no histórico.** O histórico usa todas as janelas do treino, inclusive as
   anômalas, porque o SACLA é não supervisionado e não conhece rótulos; a contaminação do
-  treino (0,40% das janelas) fica documentada.
+  treino (0,37% das janelas) fica documentada.
 - **Usuário sem histórico.** Recebe referência neutra: z sobre zero, hora com probabilidade
   1/24, tudo "inédito".
 - **Formatos de consulta inéditos.** Este atributo vai além da lista mínima. Foi incluído porque
   o tipo inédito (`leitura_atipica`) usa tabelas permitidas e já conhecidas; o único sinal
-  genérico é o formato de consulta novo para o usuário.
+  genérico é o formato de consulta novo para o usuário. **Ver D41:** como o histórico é o
+  próprio treino, as três frações de novidade valem 0 em todas as janelas de treino e o
+  Isolation Forest não as usa.
 - **Transformação `log1p`** das contagens: é decisão do modelo e será avaliada na validação
   (Fase 4).
 
@@ -382,13 +387,13 @@ Resultado na execução de referência (`python tasks.py features`, janela de 5 
 
 | Medida | Valor |
 |---|---|
-| Linhas lidas / malformadas / truncadas | 207.177 / 0 / 0 (29 arquivos) |
-| Eventos / planos sem par / planos ilegíveis | 110.410 / 0 / 0 |
+| Linhas lidas / malformadas / truncadas | 207.769 / 0 / 0 (29 arquivos) |
+| Eventos / planos sem par / planos ilegíveis | 110.738 / 0 / 0 |
 | Linhas ignoradas | 2.829 = `connection received` (1.781) + `connection authenticated` (1.048) |
-| Conferência (comandos, erros, falhas de login, conexões, linhas) | 107.581 · 447 · 733 · 1.048 · 2.744.038 — **iguais ao executor para os 10 usuários** |
-| Janelas: treino / validação / teste | 9.113 / 4.682 / 4.640 |
-| Janelas anômalas (contaminação) | 36 (0,40%) / 175 (3,74%) / 319 (6,88%) |
-| Tempo: leitura + eventos / agregação | 7,7 s / 2,8 s |
+| Conferência (comandos, erros, falhas de login, conexões, linhas) | 107.909 · 451 · 733 · 1.048 · 2.743.519 — **iguais ao executor para os 10 usuários** |
+| Janelas: treino / validação / teste | 9.109 / 4.684 / 4.662 |
+| Janelas anômalas (contaminação) | 34 (0,37%) / 176 (3,76%) / 337 (7,23%) |
+| Tempo: leitura + eventos / agregação | 5,7 s / 3,2 s |
 
 A execução de 2 dias passa pela mesma conferência (8.224 comandos, iguais por usuário).
 
@@ -406,7 +411,7 @@ scikit-learn.
 
 **D33 — Protocolo de avaliação (`evaluation/experiment.py`).**
 1. **Treino:** split de treino inteiro, sem rótulos, inclusive as janelas anômalas
-   (contaminação real de 0,40%).
+   (contaminação real de 0,37%).
 2. **Ajuste, só na validação:** grade completa de `n_estimators` {100, 200, 500} ×
    `max_samples` {256, 1024, 0,1} × `max_features` {0,5; 0,75; 1,0} × `log1p` {sim, não} = 54
    combinações, cada uma com 5 sementes. Para cada uma, o limiar de melhor F1 na validação.
@@ -554,3 +559,117 @@ regras variam mais (4,2 pontos).
    ajuste no teste.
 8. **Custo.** Leitura e eventos levam 5,7 s (36,7 mil linhas/s). A agregação, 3,2 s. O treino,
    0,43 s, e o score do teste, 0,09 s. O SACLA processa quatro semanas de log em ~10 s.
+
+## 9. Relatórios, uso real e figuras (Fase 5)
+
+**D39 — Uso real: `sacla fit` e `sacla score` (`sacla/pipeline.py`, `sacla/cli.py`).** O SACLA
+roda sobre qualquer jsonlog, sem rótulos e sem a bancada:
+- `fit --logs <pasta> --model <arquivo> [--since] [--until]`: lê o período considerado normal,
+  ajusta os históricos por usuário, o Isolation Forest e o limiar. Salva tudo num arquivo
+  (joblib), inclusive a configuração usada (janela, fuso, aliases), para que o `score` monte as
+  janelas do mesmo jeito.
+- `score --logs <pasta> --model <arquivo> --out <pasta> [--since] [--until]`: pontua um novo
+  período com os históricos já ajustados e gera o relatório.
+- Hiperparâmetros: os escolhidos na validação da Fase 4 (`config/sacla.yaml`, `detector`). A
+  lista de atributos com `log1p` passou de `model.yaml` para `sacla.yaml`, porque é do SACLA;
+  a avaliação lê a mesma lista.
+
+*Evidência de equivalência:* `fit` no período de treino da simulação (`--until
+2026-03-16T03:00:00Z`) e `score` no de teste produziram as mesmas 9.109 janelas de treino e os
+**mesmos scores** que a semente 0 do experimento nas 4.662 janelas de teste (diferença máxima
+0,0). O caminho de uso real é, portanto, o mesmo que foi avaliado.
+
+**D40 — Limiar sem rótulos no uso real.** Em produção não há rótulos para escolher o limiar.
+Ele é o score acima do qual fica uma fração fixa das janelas do próprio histórico
+(`detector.train_alert_rate`). O valor 1,44% é a fração que o limiar escolhido na validação
+(semente 0) produz no treino; com ele, o `fit` dá limiar 0,5544 contra 0,5547 do experimento, e
+só 3 das 4.662 janelas de teste mudam de lado. A taxa é um parâmetro de operação: diz quantos
+alertas o analista aceita receber num período normal.
+
+**D41 — Achado: atributos constantes no treino não influenciam o Isolation Forest.** O
+scikit-learn só corta as árvores em atributos que variam na amostra. Nas janelas de treino,
+`new_tables_frac`, `new_ips_frac` e `new_query_shapes_frac` valem sempre 0, porque o histórico
+é o próprio treino: tudo o que aparece no treino já é "conhecido". `n_ddl` também é sempre 0.
+*Evidência:* no modelo avaliado, forçar qualquer um desses quatro atributos a 1 em todas as
+janelas de teste não muda nenhum score; multiplicar `n_commands` por 100 muda até 0,049.
+Consequências:
+- O IF avaliado usa, na prática, 24 dos 28 atributos. A novidade (13 das 49 janelas do tipo
+  inédito têm tabela nunca vista) só aparece na explicação dos alertas, não no score. O que o
+  IF detecta do tipo inédito vem de volume, hora e duração.
+- Uma correção possível é calcular os atributos relativos das janelas de treino fora da
+  amostra (ex.: histórico de outros dias, "deixando um dia de fora"). Isso muda a Fase 3 e
+  exige refazer a avaliação com um teste já observado; a decisão fica registrada para revisão.
+
+**Achado relacionado: o score satura fora da faixa do treino.** Os cortes das árvores ficam
+dentro da faixa de valores do treino. Uma janela com 300 comandos, quando o máximo do treino
+era 8, percorre as árvores como a janela de 8 comandos. Uma rajada extrema pode ter score
+parecido com o de uma janela normal "de borda". Isso explica parte da vantagem das regras, que
+comparam com o máximo sem saturar, e o ganho da união IF ∪ regras.
+*Evidência:* `tests/test_pipeline.py`, em que a rajada de 300 comandos fica entre as 10
+primeiras janelas, mas não necessariamente em 1º.
+
+**D42 — Explicação dos alertas (`sacla/explain.py`).** Para cada atributo de
+`report.explain_features`, mede-se a fração das janelas do histórico do próprio usuário com
+valor maior ou igual ao da janela (cauda superior).
+- Entram até 3 atributos (`top_features`) com cauda ≤ 5% (`max_tail_fraction`), do mais raro
+  ao menos raro. Entre empates (ex.: vários acima do máximo), vence o que mais passa do
+  máximo.
+- O texto é legível para o analista: "linhas retornadas (soma): 112.507 (acima do máximo do
+  histórico; mediana 61, máximo 10.072)", "horário incomum para o usuário: 03h (0,0% das
+  janelas do histórico)" e "tabelas nunca acessadas pelo usuário: staff".
+- **Por que a cauda empírica e não o z robusto?** Ela não depende de escala nem de piso para o
+  MAD (muitos atributos têm MAD 0) e se lê diretamente ("acima do máximo", "atingido em só
+  0,4% das janelas").
+- **Limite declarado:** é uma explicação descritiva do que mais foge do normal do usuário, não
+  a atribuição interna do modelo. Quando nenhum atributo isolado é raro, o alerta diz que "a
+  combinação de valores é que é incomum".
+- Hora em seno/cosseno e os z robustos ficam de fora: a raridade da hora e as contagens já
+  dizem o mesmo de forma legível.
+
+**D43 — Relatório (`sacla/report.py`, `templates/relatorio.html.j2`).**
+- Saídas: `alertas.csv` (uma linha por janela sinalizada), `episodios.csv`, `usuarios.csv` e
+  `relatorio.html`.
+- Cada alerta tem score, posição entre todas as janelas analisadas, percentil do score no
+  histórico, explicação e resumo da janela (comandos por tipo, erros, falhas de login, linhas,
+  tabelas e IPs).
+- **Episódio:** janelas sinalizadas do mesmo usuário separadas por até 1 janela
+  (`episode_gap_windows`). É a unidade que o analista examina; o HTML lista os episódios do
+  mais atípico ao menos atípico.
+- **Sem rótulos e seguro:** o relatório não tem colunas de ground truth (teste
+  `test_alerts_have_position_percentile_and_no_label_columns`). O HTML escapa tudo o que vem do
+  log (nomes de usuário, tabelas, IPs), com teste específico. O aviso fixo diz que um alerta
+  indica comportamento atípico, não um ataque.
+- **Relatório do experimento** (`python tasks.py report`): o mesmo código, aplicado ao período
+  de teste com o modelo avaliado (semente 0). Fica em
+  `results/experimentos/<exp_id>/relatorio/`. Antes de gerar, confere que o modelo salvo
+  reproduz os scores gravados pela avaliação. À parte, `anexo_*_vs_manifesto.csv` cruza
+  alertas e episódios com o manifesto; é a única saída da Fase 5 que usa rótulos.
+
+**Resultado no teste** (semente 0): 233 janelas sinalizadas em 158 episódios. Destes, 111
+contêm ao menos uma janela de cenário e 47 não contêm nenhuma. Gerar o relatório com as
+explicações levou 0,65 s.
+
+**Achado — deriva de dados no serviço batch.** Os 6 episódios de maior score são a rotina
+noturna legítima do `svc_batch`, um por noite do teste. A explicação mostra o motivo: o lote
+passou a ler 4.290–4.619 linhas, acima do máximo do histórico (4.014). As tabelas `rental` e
+`payment` crescem com a simulação, e o lote lê mais a cada semana.
+- É uma deriva lenta dos dados, não uma anomalia de acesso.
+- Responde por 8 dos falsos positivos da semente 0.
+- Sugere reajustar o histórico periodicamente (janela móvel), o que fica como trabalho futuro.
+- Mostra também o valor das explicações: o analista descarta esses alertas em segundos.
+
+**D44 — Figuras (`evaluation/plots.py`, `results/experimentos/<exp_id>/figuras/`).**
+- Formato: PNG (300 dpi) e PDF com fontes embutidas, 6,3 pol (~16 cm) de largura, textos em
+  pt-BR com vírgula decimal. `legendas.md` traz uma legenda sugerida para cada figura.
+- **Cores:** paleta de referência da skill de visualização, conferida com o validador dela
+  (`validate_palette.js`), não a olho.
+  - Os quatro detectores (azul, laranja, água, amarelo) passam como pares vizinhos em barras.
+  - Nas curvas PR/ROC, com qualquer par podendo se tocar, quatro cores reprovam (laranja ×
+    amarelo, ΔE 13,7 < 15). Por isso só três séries ali; a união aparece na comparação.
+  - "Ambos" usa a cor da união; "só IF" e "só regras", as cores de cada detector.
+  - Mapas de calor usam uma rampa de um só matiz (azul).
+  - O contraste baixo do amarelo e do água é compensado por rótulos e pelas tabelas em
+    `tables/`.
+- As figuras são feitas para impressão (só modo claro). Os PDFs não gravam data de criação:
+  refazê-las gera arquivos idênticos (conferido por hash), exceto `tempos_etapas`, que mostra o
+  tempo medido em cada execução.

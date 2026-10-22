@@ -4,11 +4,7 @@
 # score são escolhidos SÓ na validação; o teste é usado uma única vez, com a configuração
 # escolhida, repetida com várias sementes para medir a variação.
 
-# Atributos de contagem e volume que recebem log(1 + x) quando log1p está ligado.
-log1p_features: [n_commands, n_select, n_insert, n_update, n_delete, n_ddl, n_other, n_errors,
-                 n_permission_denied, n_auth_failures, n_connections, rows_returned_sum,
-                 rows_returned_max, rows_affected_sum, duration_mean_ms, duration_max_ms,
-                 duration_p95_ms, n_tables, n_ips]
+# Os atributos que recebem log(1 + x) ficam em config/sacla.yaml (detector.log1p_features).
 
 # Grade de hiperparâmetros (busca exaustiva na validação).
 grid:
@@ -41,3 +37,10 @@ robustness:
 
 results_dir: results/experimentos
 models_dir: data/models              # modelos treinados (não versionados)
+
+# Figuras da avaliação (results/experimentos/<exp_id>/figuras/), para a monografia.
+figures:
+  dpi: 300
+  formats: [png, pdf]
+  width_in: 6.3                      # ~16 cm: largura útil de uma página A4 com margens ABNT
+  font_size: 8.5

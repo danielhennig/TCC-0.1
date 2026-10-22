@@ -17,7 +17,7 @@ from typing import Any
 import pandas as pd
 
 from evaluation.metrics import best_f1_threshold, ranking_metrics
-from sacla.config import CONFIG_DIR, ConfigError, load_yaml
+from sacla.config import CONFIG_DIR, ConfigError, SaclaSettings, load_settings, load_yaml
 from sacla.model import ModelParams, SaclaModel
 
 log = logging.getLogger(__name__)
@@ -43,12 +43,16 @@ class ModelConfig:
     raw: dict[str, Any]
 
 
-def load_model_config(path: Path | None = None) -> ModelConfig:
+def load_model_config(
+    path: Path | None = None, settings: SaclaSettings | None = None
+) -> ModelConfig:
     raw = load_yaml(path or CONFIG_DIR / "model.yaml")
+    # A transformação dos atributos é do SACLA (sacla.yaml); a avaliação usa a mesma lista.
+    log1p_features = (settings or load_settings()).detector.log1p_features
     try:
         lf = raw["label_free"]
         config = ModelConfig(
-            log1p_features=tuple(str(f) for f in raw["log1p_features"]),
+            log1p_features=log1p_features,
             grid={name: list(raw["grid"][name]) for name in PARAM_NAMES},
             tuning_seeds=tuple(int(s) for s in raw["tuning_seeds"]),
             evaluation_seeds=tuple(int(s) for s in raw["evaluation_seeds"]),

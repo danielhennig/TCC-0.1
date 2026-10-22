@@ -7,10 +7,13 @@ import json
 import logging
 import shutil
 import sys
+from pathlib import Path
 from typing import Any
 
 from evaluation.dataset import build_dataset, dataset_name
 from evaluation.experiment import run_experiment
+from evaluation.plots import make_figures
+from evaluation.report import experiment_report
 from evaluation.robustness import run_robustness
 from evaluation.tuning import load_model_config
 from sacla.config import (
@@ -39,6 +42,8 @@ def main(argv: list[str] | None = None) -> int:
     p_rob = sub.add_parser("robustness", help="reavalia um experimento em outras simulações")
     p_rob.add_argument("--exp-id", required=True, help="pasta em results/experimentos")
     p_rob.add_argument("--run-ids", nargs="+", required=True, help="execuções adicionais")
+    p_rep = sub.add_parser("report", help="relatório de anomalias do teste e figuras")
+    p_rep.add_argument("--exp-id", help="pasta em results/experimentos (padrão: a única)")
     args = parser.parse_args(argv)
     setup_logging()
 
@@ -58,6 +63,16 @@ def main(argv: list[str] | None = None) -> int:
                 "run_dirs": [f"{sim['data_dir']}/{run_id}" for run_id in run_ids],
             }
             print(json.dumps(plan))
+            return 0
+        if args.command == "report":
+            settings = load_settings()
+            model = load_model_config(settings=settings)
+            exp_dir = _experiment_dir(PROJECT_ROOT / model.results_dir, args.exp_id)
+            summary = experiment_report(exp_dir, data_root, features_root, settings)
+            robustness_dir = PROJECT_ROOT / model.robustness_dir / exp_dir.name
+            figures = make_figures(exp_dir, robustness_dir, model)
+            print(json.dumps(summary, indent=2, ensure_ascii=False))
+            print(f"{len(figures)} arquivos de figura em {exp_dir / 'figuras'}")
             return 0
         if args.command == "robustness":
             out = run_robustness(
@@ -93,6 +108,19 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     parser.error(f"comando desconhecido: {args.command}")
     return 2
+
+
+def _experiment_dir(results: Path, exp_id: str | None) -> Path:
+    if exp_id:
+        path = results / exp_id
+        if not path.is_dir():
+            raise ConfigError(f"experimento não encontrado: {path}")
+        return path
+    found = sorted(p for p in results.iterdir() if (p / "metrics.json").exists())
+    if len(found) != 1:
+        names = [p.name for p in found]
+        raise ConfigError(f"informe --exp-id; experimentos em {results}: {names}")
+    return found[0]
 
 
 def _run_id(sim: dict[str, Any], seed: Any) -> str:
