@@ -1,0 +1,125 @@
+{
+  "run_id": "sim-s404-28d",
+  "schedule": {
+    "events": 111250,
+    "events_by_kind": {
+      "connect": 1051,
+      "disconnect": 1051,
+      "failed_login": 705,
+      "statement": 108443
+    },
+    "normal_statements": 104662,
+    "statements_by_user": {
+      "analista_01": 1683,
+      "analista_02": 1819,
+      "atendente_01": 8697,
+      "atendente_02": 9256,
+      "atendente_03": 8696,
+      "atendente_04": 8177,
+      "gerente_01": 2699,
+      "gerente_02": 2736,
+      "svc_batch": 140,
+      "svc_locadora": 64540
+    },
+    "scenarios": 266,
+    "scenarios_by_split": {
+      "validation": 90,
+      "test": 156,
+      "train": 20
+    },
+    "scenarios_by_split_type_intensity": {
+      "test/dml_incomum/alta": 8,
+      "test/dml_incomum/baixa": 8,
+      "test/dml_incomum/media": 8,
+      "test/falha_auth/alta": 8,
+      "test/falha_auth/baixa": 8,
+      "test/falha_auth/media": 8,
+      "test/fora_horario/alta": 8,
+      "test/fora_horario/baixa": 8,
+      "test/fora_horario/media": 8,
+      "test/leitura_atipica/alta": 4,
+      "test/leitura_atipica/baixa": 4,
+      "test/leitura_atipica/media": 4,
+      "test/rajada/alta": 8,
+      "test/rajada/baixa": 8,
+      "test/rajada/media": 8,
+      "test/sem_permissao/alta": 8,
+      "test/sem_permissao/baixa": 8,
+      "test/sem_permissao/media": 8,
+      "test/volume_alto/alta": 8,
+      "test/volume_alto/baixa": 8,
+      "test/volume_alto/media": 8,
+      "train/dml_incomum/alta": 1,
+      "train/dml_incomum/baixa": 1,
+      "train/dml_incomum/media": 1,
+      "train/falha_auth/baixa": 3,
+      "train/fora_horario/alta": 1,
+      "train/fora_horario/media": 2,
+      "train/rajada/alta": 1,
+      "train/rajada/media": 2,
+      "train/sem_permissao/alta": 1,
+      "train/sem_permissao/baixa": 1,
+      "train/sem_permissao/media": 3,
+      "train/volume_alto/alta": 2,
+      "train/volume_alto/media": 1,
+      "validation/dml_incomum/alta": 5,
+      "validation/dml_incomum/baixa": 5,
+      "validation/dml_incomum/media": 5,
+      "validation/falha_auth/alta": 5,
+      "validation/falha_auth/baixa": 5,
+      "validation/falha_auth/media": 5,
+      "validation/fora_horario/alta": 5,
+      "validation/fora_horario/baixa": 5,
+      "validation/fora_horario/media": 5,
+      "validation/rajada/alta": 5,
+      "validation/rajada/baixa": 5,
+      "validation/rajada/media": 5,
+      "validation/sem_permissao/alta": 5,
+      "validation/sem_permissao/baixa": 5,
+      "validation/sem_permissao/media": 5,
+      "validation/volume_alto/alta": 5,
+      "validation/volume_alto/baixa": 5,
+      "validation/volume_alto/media": 5
+    }
+  },
+  "execution": {
+    "events": 111250,
+    "statements": 108443,
+    "statement_errors": {
+      "42501": 315,
+      "42601": 116
+    },
+    "unexpected_errors": {},
+    "failed_logins": 705,
+    "unexpected_logins": 0,
+    "real_duration_s": 105.4,
+    "events_per_s": 1055.9
+  },
+  "raw_log_bytes": 435109978,
+  "retimed_bytes": 21259414,
+  "raw_gz_bytes": 20943733,
+  "retime": {
+    "lines": 208629,
+    "client_lines": 208629,
+    "sessions_mapped": {
+      "marca": 1049,
+      "pid": 2,
+      "ordem_falha_login": 705
+    },
+    "unmapped_client_lines": 0,
+    "order_violations": 0,
+    "passed": true
+  },
+  "manifest_check": {
+    "scenarios": 266,
+    "problems": 0,
+    "examples": [],
+    "passed": true
+  },
+  "timings_s": {
+    "agenda_s": 1.3,
+    "execucao_s": 106.0,
+    "coleta_s": 9.7,
+    "retime_s": 20.9
+  }
+}

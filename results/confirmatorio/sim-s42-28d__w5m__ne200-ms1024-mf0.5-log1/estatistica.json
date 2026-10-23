@@ -1,0 +1,121 @@
+{
+  "exp_id": "sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1",
+  "params": {
+    "n_estimators": 200,
+    "max_samples": 1024,
+    "max_features": 0.5,
+    "log1p": true
+  },
+  "window_minutes": 5,
+  "development_runs": [
+    "sim-s42-28d",
+    "sim-s7-28d",
+    "sim-s2026-28d"
+  ],
+  "confirmatory_runs": [
+    "sim-s101-28d",
+    "sim-s202-28d",
+    "sim-s303-28d",
+    "sim-s404-28d",
+    "sim-s505-28d"
+  ],
+  "stats": {
+    "confidence": 0.95,
+    "alpha": 0.05,
+    "bootstrap_resamples": 2000,
+    "permutation_resamples": 10000,
+    "seed": 0,
+    "majority": 0.5,
+    "hypotheses": [
+      {
+        "id": "H1",
+        "metric": "scenarios",
+        "subset": "all",
+        "a": "if_mais_regras",
+        "b": "regras"
+      },
+      {
+        "id": "H2",
+        "metric": "f1",
+        "subset": "all",
+        "a": "if_mais_regras",
+        "b": "regras"
+      },
+      {
+        "id": "H3",
+        "metric": "scenarios",
+        "subset": "novel",
+        "a": "isolation_forest",
+        "b": "regras"
+      }
+    ],
+    "descriptive": [
+      {
+        "metric": "f1",
+        "subset": "all",
+        "a": "isolation_forest",
+        "b": "regras"
+      },
+      {
+        "metric": "precision",
+        "subset": "all",
+        "a": "if_mais_regras",
+        "b": "regras"
+      },
+      {
+        "metric": "recall",
+        "subset": "all",
+        "a": "if_mais_regras",
+        "b": "regras"
+      },
+      {
+        "metric": "scenarios",
+        "subset": "all",
+        "a": "isolation_forest",
+        "b": "regras"
+      }
+    ]
+  },
+  "reproduction": {
+    "compared_runs": [
+      "sim-s2026-28d",
+      "sim-s42-28d",
+      "sim-s7-28d"
+    ],
+    "max_abs_diff": 5.551115123125783e-17
+  },
+  "scenarios": {
+    "sim-s42-28d": {
+      "all": 156,
+      "novel": 12
+    },
+    "sim-s7-28d": {
+      "all": 156,
+      "novel": 12
+    },
+    "sim-s2026-28d": {
+      "all": 156,
+      "novel": 12
+    },
+    "sim-s101-28d": {
+      "all": 156,
+      "novel": 12
+    },
+    "sim-s202-28d": {
+      "all": 156,
+      "novel": 12
+    },
+    "sim-s303-28d": {
+      "all": 156,
+      "novel": 12
+    },
+    "sim-s404-28d": {
+      "all": 156,
+      "novel": 12
+    },
+    "sim-s505-28d": {
+      "all": 156,
+      "novel": 12
+    }
+  }
+}

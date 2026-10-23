@@ -1075,3 +1075,120 @@ Fontes:
 - Permutação pareada (aleatorização aproximada) para F1: Noreen (1989), *Computer-Intensive
   Methods for Testing Hypotheses*.
 - `scipy.stats.binomtest`: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.binomtest.html
+
+**D53 — Resultados da validação confirmatória.** O protocolo do pré-registro (D52) foi seguido
+sem desvios: `python tasks.py confirm --exp-id sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1`.
+- **Saída** em `results/confirmatorio/<exp_id>/`:
+  - `confirmatorio.md`, `hypotheses.csv`, `intervals.csv`;
+  - `janelas/`: sinalizações de cada detector e semente, janela por janela, para conferência;
+  - `figuras/`.
+- **Simulações:** as cinco passaram em todas as verificações.
+  - Cada uma tem 266 cenários; nenhum problema no confronto do manifesto com o log, e a
+    conferência com o executor foi aprovada.
+  - A contaminação do teste ficou entre 6,7% e 7,2%.
+- **Reprodução:** as simulações de desenvolvimento (42, 7 e 2026), reavaliadas pelo mesmo
+  código, reproduziram exatamente os números publicados da v2 (diferença máxima de 5,6·10⁻¹⁷).
+
+*Hipóteses* (agregado das cinco semanas de teste: 780 cenários, 60 do tipo inédito; %):
+
+| | Medida | A | B | A − B [IC 95%] | Discordantes (só A / só B) | p | p (Holm) | Resultado |
+|---|---|---:|---:|---:|---:|---:|---:|---|
+| H1 | cenários detectados, IF ∪ regras × regras | 84,4 | 73,5 | +10,9 [8,9; 13,0] | 87 / 0 | 1,3·10⁻²⁶ | 3,9·10⁻²⁶ | confirmada |
+| H2 | F1 por janela, IF ∪ regras × regras | 79,0 | 79,1 | −0,1 [−2,3; 2,5] | — | 0,96 | 1,00 | sem diferença |
+| H3 | tipo inédito detectado, IF × regras | 50,7 | 41,7 | +9,0 [−9,5; 27,0] | 20 / 15 | 0,50 | 1,00 | não confirmada |
+
+*Desempenho no agregado confirmatório* (%, intervalo de 95%):
+
+| Detector | Precisão | Recall | F1 | Cenários detectados | Tipo inédito |
+|---|---:|---:|---:|---:|---:|
+| IF ajustado | 74,6 [71,4; 78,0] | 59,6 [56,2; 62,8] | 66,3 [63,4; 68,9] | 69,0 [65,9; 71,9] | 50,7 [39,3; 62,0] |
+| IF sem rótulos | 71,7 [66,8; 76,7] | 30,9 [28,0; 34,1] | 43,2 [39,9; 46,6] | 37,5 [34,6; 40,6] | 19,3 [12,3; 26,7] |
+| Regras | 94,7 [93,0; 96,2] | 67,9 [63,9; 71,6] | 79,1 [76,3; 81,7] | 73,5 [70,4; 76,5] | 41,7 [30,0; 53,3] |
+| IF ∪ regras | 78,8 [75,9; 81,6] | 79,3 [76,5; 82,1] | 79,0 [76,9; 81,2] | 84,4 [81,9; 86,7] | 76,7 [68,0; 85,3] |
+
+Nas simulações de desenvolvimento, que só servem de referência, o F1 do IF foi 67,3 e a união
+detectou 85,9% dos cenários. Entre as cinco simulações confirmatórias, o F1 do IF variou de
+63,5 a 68,8.
+
+*Interpretação:*
+1. **O resultado se repetiu em dados novos.** Nenhuma conclusão do desenvolvimento dependia do
+   teste reutilizado da semente 42 (D45). Para o IF ajustado, as regras e a união, os números
+   confirmatórios ficam a 1 ou 2 pontos dos de desenvolvimento. O IF sem rótulos ficou 5 pontos
+   acima (F1 43,2 contra 38,3).
+2. **H1:** em 87 dos 780 cenários, só a união detectou; em nenhum, só as regras. A união nunca
+   perde um cenário das regras, por construção. O teste mostra que o ganho não é acaso, e o
+   intervalo dá o tamanho dele: cerca de 11 pontos.
+3. **H2:** o ganho de cobertura tem custo. A precisão cai 15,9 pontos [13,6; 18,1] e o recall
+   sobe 11,4 [9,0; 14,4], então o F1 por janela fica igual. Para quem faz a triagem, a escolha é:
+   - com a união: cerca de 1 alerta falso a cada 5 (precisão 78,8%), com 84,4% dos cenários
+     cobertos;
+   - só com as regras: 1 a cada 19 (94,7%), com 73,5% dos cenários.
+4. **H3 não se confirmou.** No tipo inédito, o IF detectou 50,7% e as regras 41,7%, mas os
+   acertos se dividem: 20 cenários só o IF, 15 só as regras. Não há regra própria para esse tipo
+   (D34), mas a regra de volume pega 25 dos 60 cenários inéditos. Ela usa linhas lidas acima do
+   máximo do usuário, e a leitura atípica às vezes passa desse máximo. Essa contagem é uma
+   conferência descritiva, feita depois do teste.
+   - A vantagem do IF no tipo inédito, vista na semente 42 (D46: 4 cenários só do IF, nenhum só
+     das regras), não se sustentou: era variação de uma simulação.
+   - O que se sustenta é a complementaridade: a união detectou 76,7% [68,0; 85,3] dos cenários
+     inéditos. Isso é descritivo, porque não era uma hipótese.
+5. **Diferenças descritivas:** o IF sozinho fica abaixo das regras em F1 (−12,8 [−16,2; −9,3]) e
+   em cenários detectados (−4,5 [−7,9; −1,3]).
+
+**D54 — Ablação de atributos e o custo de dispensar o `auto_explain`.** É exploratória (D52),
+usa só treino e validação e não muda o modelo.
+- **Comando:** `python tasks.py ablation --exp-id sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1`.
+- **Saída:** `results/ablacao/<exp_id>/`, com `ablacao.md`, as tabelas e a figura
+  `ablacao_grupos`.
+- **Desenho:** 8 simulações × 5 sementes de ajuste. Δ é a variante menos o conjunto completo,
+  em pontos; o intervalo é t de 95% entre as simulações.
+
+*IF sem cada grupo* (completo: F1 64,9, PR-AUC 0,592, cenários 73,0%):
+
+| Grupo retirado | Δ F1 | Δ PR-AUC | Δ cenários | Pior em (F1) |
+|---|---:|---:|---:|---:|
+| relativos ao histórico (z, raridade da hora, novidade) | −17,0 [−19,4; −14,7] | −0,201 | −4,8 [−8,5; −1,2] | 8 de 8 |
+| horário | −10,9 [−12,7; −9,1] | −0,129 | −1,6 [−5,4; +2,3] | 8 de 8 |
+| novidade | −2,6 [−4,2; −1,0] | −0,029 | −4,0 [−5,2; −2,9] | 8 de 8 |
+| origem | −0,9 [−2,6; +0,9] | −0,012 | −2,2 [−4,8; +0,4] | 6 de 8 |
+| sem `auto_explain` (linhas e tabelas) | +0,1 [−1,3; +1,5] | +0,017 | −9,6 [−12,7; −6,6] | 5 de 8 |
+
+*Sem `auto_explain`, o sistema inteiro.* As regras perdem `volume` e `dml_volume`; o IF perde
+o grupo; a união junta as duas versões reduzidas.
+
+| Detector | F1 completo → sem | Cenários completo → sem |
+|---|---:|---:|
+| IF ajustado | 64,9 → 65,0 | 73,0 → 63,3 |
+| Regras | 83,2 → 77,1 | 76,4 → 52,5 |
+| IF ∪ regras | 75,2 → 73,0 | 85,3 → 70,2 |
+
+A perda está em dois tipos (cenários detectados pela união, %):
+- `volume_alto`: 89,0 → 35,5;
+- `dml_incomum`: 69,5 → 32,5.
+
+Os demais ficam iguais, com variação de até 1 ponto:
+- `falha_auth`: 98,3 → 98,2;
+- `sem_permissao`: 100 → 100;
+- `fora_horario`: 98,5 → 99,5;
+- `rajada`: 56,7 → 55,8.
+
+*Interpretação:*
+1. **Os atributos relativos ao histórico de cada usuário são o núcleo do IF.** Sem eles, o F1
+   cai 17 pontos em todas as simulações. Isso sustenta o desenho da D29: comparar o usuário
+   consigo mesmo, e não com uma média geral. O horário vem em seguida (−10,9).
+2. **A novidade (D45) contribui pouco, mas sempre:** pior nas 8 simulações. A origem (IP) não
+   tem efeito mensurável, porque as três redes simuladas dão pouca variação de origem.
+3. **Sem `auto_explain`, o F1 do IF não muda, mas a cobertura cai.** O IF compensa no F1
+   sinalizando outras janelas. Mas a detecção de volume alto pelo IF cai de 80,7% para 35,5%, e
+   a de DML incomum, de 46,7% para 32,5%. São justamente os casos de extração de dados e de
+   alteração em massa.
+4. **Recomendação prática.** Manter o `auto_explain` (com `log_analyze` e `log_timing = off`,
+   D12) quando extração de dados e DML em massa importam. Os ~10% de latência compram cerca de
+   15 pontos de cobertura da união. Sem ele, o SACLA continua cobrindo autenticação,
+   permissão, horário e rajada no mesmo nível.
+   - O `auto_explain.sample_rate` explicaria só uma fração dos comandos de cada sessão. A
+     documentação oficial confirma o parâmetro
+     (https://www.postgresql.org/docs/18/auto-explain.html).
+   - Isso baratearia o custo, mas subestimaria as linhas lidas. Não foi avaliado.
+5. **Limite:** o F1 de cada variante usa o melhor limiar da própria validação, o que é
+   otimista. Por isso a comparação vale entre variantes, e não como estimativa de desempenho.

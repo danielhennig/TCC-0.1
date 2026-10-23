@@ -19,6 +19,9 @@ Questões investigadas:
 3. O que o modelo acrescenta a um conjunto de regras simples escritas por um especialista?
 4. Quanto os resultados dependem dos hiperparâmetros, do tamanho da janela, da semente do
    modelo e da semente da simulação?
+5. As conclusões se repetem em simulações novas, com hipóteses fixadas antes e teste
+   estatístico? Quanto cada grupo de atributos contribui, e o que se perde sem o
+   `auto_explain`?
 
 ## 2. Ambiente
 
@@ -267,6 +270,67 @@ não as usava (D41). A v2 corrige isso (D45) e repete o mesmo protocolo (D46).
 - As regras não mudam, porque só usam atributos absolutos.
 - A v1 está arquivada em `results/historico/v1-historico-na-amostra/`.
 
+### 9.7 Validação confirmatória (figuras `confirmatorio_detectores` e `confirmatorio_diferencas`)
+
+**Desenho (D52).** Antes de gerar qualquer dado novo, foram registradas e versionadas:
+- a configuração congelada da v2;
+- cinco sementes de simulação nunca usadas (101, 202, 303, 404 e 505);
+- três hipóteses, com os testes e o nível de significância.
+O protocolo é o da robustez: em cada simulação, só o limiar vem da validação dela, e o teste
+é usado uma vez. As hipóteses são testadas no agregado das cinco semanas de teste, com 780
+cenários, 60 deles do tipo inédito. Os testes são bicaudais, com α = 0,05 e correção de Holm.
+- **Cenários:** McNemar exato, contando o cenário como detectado pelo IF se ele o detecta em
+  ao menos metade das 10 sementes.
+- **F1 por janela:** permutação pareada por blocos usuário × dia.
+- **Intervalos de 95%:** bootstrap estratificado por simulação, reamostrando blocos usuário ×
+  dia (métricas por janela) ou cenários.
+
+**Resultados (D53)** (%; intervalo de 95%):
+
+| Detector | Precisão | Recall | F1 | Cenários detectados | Tipo inédito |
+|---|---:|---:|---:|---:|---:|
+| IF ajustado | 74,6 [71,4; 78,0] | 59,6 [56,2; 62,8] | 66,3 [63,4; 68,9] | 69,0 [65,9; 71,9] | 50,7 [39,3; 62,0] |
+| IF sem rótulos | 71,7 [66,8; 76,7] | 30,9 [28,0; 34,1] | 43,2 [39,9; 46,6] | 37,5 [34,6; 40,6] | 19,3 [12,3; 26,7] |
+| Regras | 94,7 [93,0; 96,2] | 67,9 [63,9; 71,6] | 79,1 [76,3; 81,7] | 73,5 [70,4; 76,5] | 41,7 [30,0; 53,3] |
+| IF ∪ regras | 78,8 [75,9; 81,6] | 79,3 [76,5; 82,1] | 79,0 [76,9; 81,2] | 84,4 [81,9; 86,7] | 76,7 [68,0; 85,3] |
+
+| Hipótese | Diferença [IC 95%] | p (Holm) | Resultado |
+|---|---:|---:|---|
+| H1: IF ∪ regras detecta mais cenários que as regras | +10,9 [8,9; 13,0] | < 0,0001 | confirmada |
+| H2: o F1 por janela da união difere do das regras | −0,1 [−2,3; 2,5] | 1,00 | sem diferença |
+| H3: o IF detecta mais cenários inéditos que as regras | +9,0 [−9,5; 27,0] | 1,00 | não confirmada |
+
+- **Os resultados do desenvolvimento se repetiram em dados novos.** O F1 do IF foi 66,3 (67,3
+  nas simulações de desenvolvimento), e a união detectou 84,4% dos cenários (85,9). Reavaliar as
+  simulações de desenvolvimento pelo mesmo código reproduziu exatamente os números publicados.
+- **A combinação IF ∪ regras amplia a cobertura sem perder F1** (H1 e H2): 87 cenários a mais,
+  nenhum a menos. Em troca, a precisão cai de 94,7% para 78,8%, e o recall sobe de 67,9% para
+  79,3%.
+- **No tipo inédito, a vantagem do IF sobre as regras não se confirmou** (H3).
+  - Os acertos se dividem: 20 cenários só o IF, 15 só as regras.
+  - As regras pegam esse tipo pela regra de volume, quando a leitura passa do máximo do
+    usuário.
+  - O que se sustenta é a complementaridade: a união detectou 76,7% dos cenários inéditos.
+
+### 9.8 Ablação de atributos (figura `ablacao_grupos`)
+
+Cada grupo de atributos foi retirado do IF, um de cada vez, com os hiperparâmetros congelados.
+A medida usa só treino e validação, nas 8 simulações (D52, D54). Os resultados, em pontos de
+F1 na validação (intervalo t de 95% entre simulações):
+- **Relativos ao histórico do usuário:** −17,0 [−19,4; −14,7]; pior em todas as simulações.
+  É a parte mais importante do modelo.
+- **Horário:** −10,9 [−12,7; −9,1].
+- **Novidade:** −2,6 [−4,2; −1,0]; −4,0 pontos de cenários detectados. É pouco, mas o efeito
+  aparece nas 8 simulações.
+- **Origem:** sem efeito mensurável (−0,9 [−2,6; +0,9]).
+- **Sem `auto_explain`** (linhas e tabelas):
+  - o F1 do IF não muda (+0,1), mas ele detecta 9,6 pontos a menos de cenários;
+  - as regras perdem as duas regras de volume;
+  - a união cai de 85,3% para 70,2% dos cenários;
+  - a perda se concentra em volume alto (89,0% → 35,5%) e DML incomum (69,5% → 32,5%).
+  Os ~10% de latência do `auto_explain` compram, portanto, cerca de 15 pontos de cobertura,
+  justamente nos casos de extração de dados e de alteração em massa.
+
 ## 10. Relatório e uso real
 
 Para cada janela sinalizada, o relatório (CSV e HTML) mostra:
@@ -309,7 +373,8 @@ explicados e a triagem de cada um (D47–D50).
 - **Correção depois de ver o teste.** A v2 corrige um defeito estrutural da v1 (D41, D45)
   e por isso usa o teste uma segunda vez. O defeito foi achado sem olhar desempenho e o
   protocolo não mudou, mas a v2 deve ser lida como uma versão corrigida, com a v1 reportada ao
-  lado.
+  lado. A validação confirmatória (seção 9.7) responde a isso: em cinco simulações novas, com
+  as hipóteses registradas antes, os resultados se repetiram.
 - **Novidade de tabelas com pouco peso.** Mesmo na v2, só 2 janelas do treino têm tabela
   inédita (fora do dia), então esse atributo pesa pouco no modelo; IPs e formatos de consulta
   inéditos pesam mais.
@@ -323,12 +388,19 @@ explicados e a triagem de cada um (D47–D50).
 - Uma base pequena (Pagila), um único SGBD e 10 usuários.
 - Três redes simulam a origem das conexões; IPs reais seriam mais diversos.
 - O `auto_explain` com análise tem custo de ~10% na latência, o que limita o uso direto em
-  produção.
+  produção. Sem ele, a cobertura cai cerca de 15 pontos, quase toda em volume e DML (9.8).
 
 **Validade de conclusão**
-- **Teste usado uma vez.** Hiperparâmetros e limiares vêm só da validação.
-- **Variação medida.** 10 sementes do modelo e 3 simulações. Três simulações ainda são poucas
-  para afirmações fortes sobre a variação entre conjuntos de dados.
+- **Teste usado uma vez.** Hiperparâmetros e limiares vêm só da validação. Nas simulações
+  confirmatórias, o teste foi usado uma única vez, depois do pré-registro (D52).
+- **Variação medida.** 10 sementes do modelo e 8 simulações (3 de desenvolvimento e 5
+  confirmatórias), com intervalos de confiança e testes pareados. As simulações vêm todas do
+  mesmo gerador: a variação medida é a de sementes, não a de ambientes diferentes.
+- **Poder estatístico no tipo inédito.** São 60 cenários inéditos, e só 35 são discordantes
+  entre o IF e as regras. Uma diferença de 9 pontos não pode ser distinguida do acaso com esse
+  tamanho (H3). A ausência de significância não prova que os dois são iguais.
+- **Ablação exploratória.** Ela usa o melhor limiar da própria validação, o que é otimista. Ela
+  compara variantes entre si, e não estima desempenho.
 - **Otimismo da validação rotulada.** O limiar escolhido na validação supõe rótulos que um
   ambiente real não tem; a variante sem rótulos mostra o caso pessimista.
 
@@ -343,9 +415,12 @@ python tasks.py features     # conjunto rotulado (janela de 5 min)
 python tasks.py evaluate     # ajuste, teste, regras, sensibilidade (~5 min)
 python tasks.py robustness --exp-id sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1
 python tasks.py report       # relatório do teste e figuras
+python tasks.py confirm  --exp-id sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1   # Fase 7 (~15 min)
+python tasks.py ablation --exp-id sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1   # Fase 7 (~1 min)
 ```
 
-- **Sementes:** simulação 42 (robustez: 7 e 2026), ajuste 0–4, avaliação 0–9.
+- **Sementes:** simulação 42 (robustez: 7 e 2026; confirmatórias: 101, 202, 303, 404 e 505),
+  ajuste 0–4, avaliação 0–9, bootstrap e permutação 0.
 - **Configuração:** em `config/*.yaml`; a resolvida e as versões ficam em cada pasta de
   experimento.
 - **Determinismo:** refazer a avaliação produz as mesmas métricas; só os tempos variam.

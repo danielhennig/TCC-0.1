@@ -12,12 +12,14 @@ O SACLA lê só o log nativo do PostgreSQL. Ele aponta janelas de 5 minutos em q
 comporta de forma atípica em relação ao próprio histórico e explica por quê. É um sistema que
 **auxilia** a identificação: um alerta indica comportamento atípico, não um ataque.
 
-As cinco fases estão concluídas:
+As sete fases estão concluídas:
 1. ambiente e logs;
 2. usuários, simuladores e ground truth;
 3. leitura e atributos;
 4. modelo, avaliação e baseline;
-5. relatórios, figuras e documentação.
+5. relatórios, figuras e documentação;
+6. monitor contínuo e painel local (ferramenta de apoio, fora da avaliação);
+7. validação confirmatória pré-registrada, estatística e ablação de atributos.
 
 A metodologia e os resultados estão em [docs/metodologia.md](docs/metodologia.md); as
 decisões técnicas, com fontes e evidências, em [docs/decisoes.md](docs/decisoes.md).
@@ -39,6 +41,30 @@ incluía a própria janela, o que anulava os atributos de novidade (D41). Ela es
 `results/historico/` e comparada com a v2 na seção 9.6 da metodologia (F1 do IF: 63,8 → 68,1).
 Interpretação, limitações e ameaças à validade: seções 9 e 11 da metodologia.
 
+### Validação confirmatória (cinco simulações novas, hipóteses registradas antes)
+
+O teste da simulação 42 foi usado duas vezes (v1 e v2). Por isso, a configuração da v2 foi
+congelada e reavaliada em cinco simulações nunca vistas (sementes 101, 202, 303, 404 e 505).
+As hipóteses e os testes foram versionados antes de gerar os dados (D52, D53).
+
+| Detector | F1 [IC 95%] | Cenários detectados [IC 95%] |
+|---|---:|---:|
+| Isolation Forest (ajustado na validação) | 66,3 [63,4; 68,9] | 69,0 [65,9; 71,9] |
+| Regras de especialista | 79,1 [76,3; 81,7] | 73,5 [70,4; 76,5] |
+| Isolation Forest ∪ regras | 79,0 [76,9; 81,2] | 84,4 [81,9; 86,7] |
+
+- **H1, confirmada:** a união detecta mais cenários que as regras. São +10,9 pontos [8,9;
+  13,0], com p (Holm) < 0,0001.
+- **H2, sem diferença:** o F1 por janela da união é igual ao das regras (−0,1 [−2,3; 2,5]). A
+  cobertura maior custa precisão (78,8% contra 94,7%).
+- **H3, não confirmada:** o IF detecta 50,7% do tipo inédito e as regras 41,7%. A diferença
+  não se distingue do acaso, mas os acertos são complementares: a união detecta 76,7%.
+- **Ablação** (validação, D54):
+  - os atributos relativos ao histórico de cada usuário são os que mais pesam (−17 pontos de
+    F1 sem eles);
+  - sem o `auto_explain`, a união detecta cerca de 15 pontos a menos de cenários, quase todos
+    de volume alto e DML incomum.
+
 ## Pré-requisitos
 
 - Docker Desktop (ou Docker Engine) com Compose v2, em execução.
@@ -55,6 +81,8 @@ python tasks.py features     # janelas de 5 min com atributos e rótulos (--wind
 python tasks.py evaluate     # ajuste na validação, teste único, regras, sensibilidade (~5 min)
 python tasks.py robustness --exp-id sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1
 python tasks.py report       # relatório de anomalias do teste e figuras
+python tasks.py confirm  --exp-id sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1   # Fase 7 (~15 min)
+python tasks.py ablation --exp-id sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1   # Fase 7 (~1 min)
 python tasks.py test         # testes (pytest)
 python tasks.py lint         # ruff + mypy
 ```
@@ -131,6 +159,8 @@ O visual (cores, tipografia e modo escuro) fica em `.streamlit/config.toml` (D51
 | `results/dataset/<run_id>/` | resumo do conjunto rotulado e conferência com o executor | sim |
 | `results/experimentos/<exp_id>/` | métricas, tabelas, scores, `resumo.md`, `relatorio/` e `figuras/` | sim |
 | `results/robustez/<exp_id>/` | o mesmo experimento em outras simulações | sim |
+| `results/confirmatorio/<exp_id>/` | validação confirmatória: hipóteses, intervalos, sinalizações por janela e figuras | sim |
+| `results/ablacao/<exp_id>/` | ablação de atributos na validação, por grupo e por tipo de cenário | sim |
 | `results/historico/` | primeira avaliação (v1), guardada para comparação | sim |
 
 As figuras (PNG 300 dpi e PDF) e as legendas sugeridas (`figuras/legendas.md`) estão prontas
@@ -146,7 +176,7 @@ src/sacla/         o SACLA: reader (1), events/sqlclass/features (2), model (3),
 src/dashboard/     painel local (Streamlit): fontes, bancos, alertas e triagem
 src/simlab/        bancada experimental: provisionamento, simulação, remapeamento, verificações
 src/evaluation/    rótulos, conjunto de dados, ajuste, métricas, regras, robustez, relatório
-                   do experimento e figuras
+                   do experimento e figuras; validação confirmatória, estatística e ablação
 tests/             testes pytest e linhas reais de log (fixtures)
 docs/              metodologia.md e decisoes.md
 ```
@@ -158,9 +188,13 @@ existem só no manifesto e na avaliação.
 
 - Tráfego sintético, regular e desenhado pelo mesmo autor das anomalias e das regras.
 - Horários simulados e execução sequencial, sem concorrência real.
-- `auto_explain` com análise: ~10% de latência e ~10 KB de log por comando.
-- A avaliação corrigida (v2) usou o conjunto de teste pela segunda vez, depois de corrigir
-  um defeito estrutural achado sem olhar desempenho (D41, D45). As duas versões são reportadas.
+- `auto_explain` com análise: ~10% de latência e ~10 KB de log por comando. Sem ele, a
+  cobertura de volume alto e DML incomum cai para menos da metade (D54).
+- A avaliação corrigida (v2) usou o conjunto de teste pela segunda vez, depois de corrigir um
+  defeito estrutural achado sem olhar desempenho (D41, D45). A validação confirmatória em
+  simulações novas reproduziu os resultados (D53).
+- As oito simulações vêm do mesmo gerador. Os intervalos medem a variação entre sementes, não
+  entre ambientes reais.
 - O score do Isolation Forest satura fora da faixa do treino: um valor 100× acima do máximo
   pontua como um pouco acima.
 - Sem atualização do histórico: o crescimento das tabelas faz a rotina batch legítima parecer
