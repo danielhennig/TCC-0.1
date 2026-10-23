@@ -806,3 +806,122 @@ dois lados (baixa 91% → 84%; média 62,5% → 65%; alta 77,5% → 84%). A vari
 3. A união IF ∪ regras segue como a melhor cobertura: 86,2% dos cenários.
 4. Mais estabilidade pediria fixar 500 árvores. Mas a escolha é feita só na validação, onde 200
    e 500 empatam dentro do desvio; mudar agora seria escolher pelo teste.
+
+## 11. Monitor contínuo e painel local (Fase 6)
+
+**D47 — Escopo ampliado: painel local e monitor em lotes curtos, fora da avaliação.** O
+escopo original fechava "interface web" e "tempo real". A pedido, foram acrescentados um painel
+local e um monitor que pontua as janelas assim que fecham, como **protótipo de uso
+operacional**. Limites:
+- **Fora da avaliação do TCC.** Nenhum resultado das fases 4 e 5 muda. *Evidência:* depois da
+  Fase 6, o conjunto de 5 min tem os mesmos 28 atributos e os mesmos rótulos nas 18.455
+  janelas; o relatório do experimento tem os mesmos 295 alertas em 195 episódios; o CSV ganhou
+  só as colunas de banco.
+- **Não é tempo real.** É processamento em lotes de uma janela: atraso de até 5 min mais a
+  tolerância de gravação do log (60 s).
+- **Só local.** O painel fica publicado em `127.0.0.1`, sem autenticação; é para uma pessoa,
+  na própria máquina.
+- **Continuam fora:** API REST, bloqueio automático, vários algoritmos de ML, Grafana e
+  Kafka/Spark.
+- **Vale confirmar com o orientador** se o painel entra no texto como ferramenta de apoio.
+
+**D48 — Monitor (`sacla/monitor.py`, `sacla/store.py`; `config/monitor.yaml`).**
+- **Fontes:** cada fonte é um servidor PostgreSQL com jsonlog numa pasta acessível ao
+  container. Tem um relógio:
+  - **ao vivo:** o agora menos a tolerância;
+  - **reprodução:** começa numa data e anda N vezes mais rápido. Serve para ver o monitor
+    sem tráfego ao vivo, por exemplo a semana de teste a 288×, um dia a cada 5 min.
+- **Ciclo** (a cada 5 s):
+  1. calcula o ponto de corte, alinhado ao início de uma janela;
+  2. se ele passou da última janela pontuada, lê os eventos do período com uma janela de
+     margem antes, que recupera o pareamento de plano e comando na borda;
+  3. pontua só as janelas completas, com o mesmo detector do `sacla fit` (`pipeline.Detector`)
+     e a mesma explicação do relatório (`report.describe_windows`).
+- **Arquivos:** como os arquivos, em ordem de nome, são cronológicos, o monitor pula os que
+  terminam antes do período e os que começam depois. Isso usa um cache do primeiro horário de
+  cada arquivo. Na reprodução, cada passada lê um arquivo (~7 mil linhas, 0,3 s) em vez dos 8
+  da semana.
+- **Estado:** SQLite em modo WAL num volume Docker (`sacla_monitor`), porque num bind mount do
+  Windows o travamento do SQLite não é confiável. A chave (fonte, usuário, início da janela)
+  torna as gravações idempotentes: reprocessar não duplica, e a triagem de um alerta
+  existente é mantida.
+- **Concorrência entre monitor e painel:**
+  - uma trava com prazo impede duas análises da mesma fonte;
+  - a análise lê o estado só depois de travar;
+  - as ações do painel que mexem no estado (limpar, reprocessar, reiniciar a reprodução,
+    ajustar e reprocessar) esperam a trava (`Store.locked`), então uma análise em curso nunca
+    desfaz uma dessas ações;
+  - o ponteiro só avança se ninguém o mudou durante a análise (compare-and-set).
+- **Reprocessar com outro detector:** alertas ainda não triados que o detector atual deixou de
+  gerar são removidos. Os triados ficam, como registro do analista. Voltar o ponteiro
+  (`rewind`) só vale para trás; para a frente, pularia janelas.
+- **Robustez:**
+  - o detector é recarregado quando o arquivo muda, e a gravação é atômica;
+  - fonte sem detector fica "aguardando ajuste";
+  - o erro de uma fonte fica registrado sem parar as outras;
+  - o `reset`/`simulate` preserva o volume de estado.
+
+*Evidência de coerência com o lote:* a semana de teste inteira, passada pelo monitor (168
+passadas de 1 h simulada), deu **4.662 janelas e 296 alertas, exatamente os mesmos (usuário,
+janela) do `sacla score`** com o mesmo detector. São 296, e não os 295 da avaliação, porque o
+limiar do uso real é a taxa de alertas do histórico (D40): uma janela muda de lado.
+
+**D49 — Painel (`src/dashboard/`, Streamlit 1.66.0 + Altair 6.3.0; `python tasks.py dashboard`).** Pacote e módulos com nomes em inglês, como manda a regra do projeto; os textos da interface são em pt-BR.
+- **Páginas:**
+  - Visão geral: indicadores, estado de cada fonte, alertas no tempo por banco e usuários com
+    mais alertas;
+  - Bancos supervisionados: bancos por fonte; ações "Analisar agora", "Ajustar detector" e
+    "Reprocessar" (mantendo ou apagando a triagem);
+  - Alertas: filtros por fonte, banco, usuário, status, período e score; episódios; detalhe
+    com indicadores, explicação, bancos inéditos, gráfico de 3 h em volta e triagem com nota;
+    exportação em CSV;
+  - Usuários: score por janela e horários comparados ao histórico;
+  - Dados: fontes, últimas análises, exportação e limpeza do estado.
+- **Alertas no painel:** contador de alertas novos na barra lateral, atualizado a cada 20 s, e
+  um aviso na tela quando o número sobe. O status de triagem aparece sempre com ícone e rótulo.
+- **Período por fonte:** cada fonte conta o período a partir da própria janela mais recente.
+  Uma fonte ao vivo (outubro) e uma reprodução (março) aparecem juntas sem uma esconder a
+  outra.
+- **Triagem pelo episódio certo:** a seleção guarda a chave do episódio (fonte, usuário e
+  início), não a posição na tabela, que muda quando chegam alertas.
+- **Alertas sem banco** aparecem como "(sem banco)" nos filtros, em vez de sumirem.
+- **Sem valores fixos no código:** atualização, limite de alertas, horas em volta do alerta e
+  agrupamento por hora/dia ficam em `config/monitor.yaml` (`dashboard`).
+- **Sem rótulos:** o painel só importa `sacla`. Um teste de arquitetura garante que ele não
+  importa `simlab` nem `evaluation`, e que o `sacla` não depende da interface.
+- **Conteúdo do log:** é mostrado como texto, em tabelas ou com a marcação escapada, nunca
+  como HTML.
+- **Gráficos:** seguem a skill de visualização. A paleta foi validada nos fundos claro e escuro
+  do Streamlit; no claro, amarelo e água ficam abaixo de 3:1, por isso todo gráfico tem a
+  tabela dos dados ao lado. A linha do tempo se interrompe onde não há atividade.
+- **Versões:**
+  - a 1.65.0 (com mais de duas semanas) exige `pyarrow < 26`, e o projeto fixa a 26.0.0 usada
+    nos resultados; para não mexer no ambiente avaliado, ficou a 1.66.0, publicada 8 dias
+    antes;
+  - o Altair é a versão que a Streamlit resolve, fixada por ser usado diretamente.
+- *Evidência:* `tests/test_dashboard.py` abre cada página com o `AppTest` do Streamlit sobre
+  um estado real do monitor, inclusive o detalhe de um episódio com a triagem. Capturas feitas
+  com o Edge sem interface conferiram o layout. A revisão de código da fase achou 10 pontos
+  (concorrência, período, seleção, nomes em português, valores fixos); todos foram corrigidos,
+  com testes.
+
+**D50 — Bancos (`dbname`).** Os eventos passaram a ter o banco da linha do log. Linhas sem o
+campo herdam o banco da sessão, como já acontecia com o usuário. As janelas ganharam a coluna
+`dbs`.
+- **A chave e os atributos do modelo não mudam:** o banco é contexto para filtros, alertas e
+  relatório.
+- A referência de cada usuário guarda os bancos do histórico, e o painel avisa quando um alerta
+  envolve um banco que o usuário nunca acessou. É só contexto: não entra no score.
+- `sacla.__version__` foi para 0.2.0: detectores salvos antes são recusados com a mensagem
+  de refazer o `fit`.
+- Na simulação há um só banco (`pagila`); os testes cobrem um segundo banco (`rh`).
+
+**Limitações da Fase 6.**
+- No laboratório não há histórico ao vivo representativo: a fonte `laboratorio` fica
+  "aguardando ajuste" até alguém ajustar um detector com um período normal do próprio servidor.
+- O arquivo de log ativo é relido inteiro a cada análise (até 100 MB pela rotação
+  configurada). Ler a partir de um deslocamento fica como melhoria futura.
+- A saturação do score (D41) vale também aqui: nos testes sintéticos, uma rajada de 300
+  comandos às 00h ficou abaixo do limiar. Para alertar nesses casos, a combinação IF ∪ regras
+  (a melhor cobertura na avaliação, D46) seria o próximo passo, levando as regras para o
+  pacote `sacla`.

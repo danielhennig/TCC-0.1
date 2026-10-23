@@ -26,6 +26,7 @@ def event(ts_ms: int, user: str, **fields: Any) -> dict[str, Any]:
         "ts_ms": ts_ms,
         "user": user,
         "session_id": f"{user}-{ts_ms // (60 * MIN)}",
+        "dbname": "pagila",
         "remote_host": "10.0.0.1",
         "application_name": "app",
         "kind": "query",

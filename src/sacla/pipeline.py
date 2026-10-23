@@ -10,6 +10,7 @@ e gera o relatório. Nada aqui usa rótulos.
 from __future__ import annotations
 
 import logging
+import os
 import pickle
 from dataclasses import dataclass, field, replace
 from datetime import datetime
@@ -47,8 +48,11 @@ class Detector:
     version: str = __version__
 
     def save(self, path: Path) -> None:
+        """Grava de forma atômica: quem lê (o monitor) nunca vê um arquivo pela metade."""
         path.parent.mkdir(parents=True, exist_ok=True)
-        joblib.dump(self, path)
+        partial = path.with_name(path.name + ".tmp")
+        joblib.dump(self, partial)
+        os.replace(partial, path)
 
     @staticmethod
     def load(path: Path) -> Detector:
@@ -97,10 +101,17 @@ def parse_instant(value: str | None) -> int | None:
 
 
 def load_events(
-    logs: Path, settings: SaclaSettings, since_ms: int | None = None, until_ms: int | None = None
+    logs: Path,
+    settings: SaclaSettings,
+    since_ms: int | None = None,
+    until_ms: int | None = None,
+    files: list[Path] | None = None,
 ) -> LoadedEvents:
-    """Eventos do log em [since, until) (módulos 1 e 2a)."""
-    files = list_log_files(logs, settings.reader.patterns)
+    """Eventos do log em [since, until) (módulos 1 e 2a).
+
+    `files` restringe a leitura a arquivos já selecionados (o monitor pula os antigos).
+    """
+    files = files if files is not None else list_log_files(logs, settings.reader.patterns)
     if not files:
         raise FileNotFoundError(f"nenhum arquivo de log em {logs} ({settings.reader.patterns})")
     read, parse = ReadReport(), ParseReport()

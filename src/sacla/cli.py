@@ -3,6 +3,8 @@
 fit    lê o log de um período considerado normal e salva o detector (modelo, históricos e
        limiar);
 score  lê o log de um novo período e gera o relatório de anomalias (CSV e HTML).
+monitor        pontua as janelas das fontes de config/monitor.yaml assim que fecham (laço);
+monitor-fit    ajusta o detector de uma fonte do monitor.
 Datas em ISO 8601 com fuso (ex.: 2026-03-16T03:00:00Z); o intervalo é [--since, --until).
 """
 
@@ -10,11 +12,13 @@ from __future__ import annotations
 
 import argparse
 import logging
+import signal
 import sys
 from dataclasses import replace
 from pathlib import Path
 
 from sacla.config import ConfigError, SaclaSettings, load_settings, setup_logging
+from sacla.monitor import Monitor, fit_source, load_monitor_settings, run_forever
 from sacla.pipeline import Detector, fit_detector, load_events, parse_instant, score_events
 from sacla.report import display_time, write_report
 
@@ -39,10 +43,20 @@ def main(argv: list[str] | None = None) -> int:
         else:
             p.add_argument("--out", type=Path, required=True, help="pasta do relatório")
             p.add_argument("--title", default="SACLA — relatório de acessos atípicos")
+    p_mon = sub.add_parser("monitor", help="monitor contínuo das fontes (config/monitor.yaml)")
+    p_mon.add_argument("--once", action="store_true", help="uma passada só (depuração)")
+    p_fit = sub.add_parser("monitor-fit", help="ajusta o detector de uma fonte do monitor")
+    p_fit.add_argument("--source", required=True, help="id da fonte em config/monitor.yaml")
+    p_fit.add_argument("--since", help="início do histórico (padrão: o sugerido na fonte)")
+    p_fit.add_argument("--until", help="fim do histórico (padrão: o sugerido na fonte)")
     args = parser.parse_args(argv)
     setup_logging()
 
     try:
+        if args.command == "monitor":
+            return _monitor(once=args.once)
+        if args.command == "monitor-fit":
+            return _monitor_fit(args.source, args.since, args.until)
         since, until = parse_instant(args.since), parse_instant(args.until)
         if args.command == "fit":
             settings = _overrides(load_settings(), args.window, args.alert_rate)
@@ -76,6 +90,40 @@ def main(argv: list[str] | None = None) -> int:
     except (ConfigError, FileNotFoundError) as exc:
         log.error("%s", exc)
         return 2
+
+
+def _monitor(once: bool) -> int:
+    # A cada passada o pipeline diria quantos arquivos leu; no laço, só os alertas interessam.
+    logging.getLogger("sacla.pipeline").setLevel(logging.WARNING)
+    monitor = Monitor(load_monitor_settings())
+    if once:
+        for result in monitor.tick():
+            print(
+                f"{result.source_id}: {result.windows} janelas, {result.alerts} alertas "
+                f"({result.new_alerts} novos)"
+            )
+        return 0
+    stop = {"now": False}
+
+    def request_stop(signum: int, frame: object) -> None:
+        log.info("sinal %d recebido; encerrando o monitor", signum)
+        stop["now"] = True
+
+    signal.signal(signal.SIGTERM, request_stop)
+    signal.signal(signal.SIGINT, request_stop)
+    run_forever(monitor, lambda: stop["now"])
+    return 0
+
+
+def _monitor_fit(source_id: str, since: str | None, until: str | None) -> int:
+    monitor_settings = load_monitor_settings()
+    source = monitor_settings.source(source_id)
+    since_ms = parse_instant(since) if since else source.fit_since_ms
+    until_ms = parse_instant(until) if until else source.fit_until_ms
+    result = fit_source(monitor_settings, source, load_settings(), since_ms, until_ms)
+    for key, value in result.info.items():
+        print(f"{key}: {value}")
+    return 0
 
 
 def _overrides(settings: SaclaSettings, window: int | None, rate: float | None) -> SaclaSettings:

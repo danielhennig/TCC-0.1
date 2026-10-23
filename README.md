@@ -91,6 +91,32 @@ aquele usuário, por exemplo:
 
 > linhas retornadas (soma): 112.507 (acima do máximo do histórico; mediana 61, máximo 10.072)
 
+## Painel e monitoramento
+
+Além do uso em lote, o SACLA tem um **monitor** que pontua as janelas de 5 min assim que elas
+fecham, e um **painel local** para acompanhar fontes, bancos e alertas. É uma ferramenta de
+apoio, fora da avaliação do TCC (D47–D50).
+
+```bash
+python tasks.py dashboard       # sobe monitor e painel: http://localhost:8501
+python tasks.py dashboard-stop  # para os dois (estado e detectores ficam no volume sacla_monitor)
+```
+
+1. **Bancos supervisionados → Ajustar detector:** em cada fonte, escolha um período de log
+   considerado normal. A fonte `simulacao-s42` já sugere o treino da simulação.
+2. O monitor passa a analisar a fonte. A `simulacao-s42` reproduz a semana de teste a 288×
+   (um dia a cada 5 min); a `laboratorio` acompanha o servidor do Docker ao vivo.
+3. **Alertas:** filtre por fonte, banco, usuário e status. Abra um episódio para ver por que
+   foi sinalizado e faça a triagem (em análise / suspeito confirmado / falso positivo), com
+   anotação. O contador da barra lateral avisa quando chegam alertas novos.
+
+Para supervisionar outro servidor: monte a pasta de jsonlog dele no `docker-compose.yml`
+(serviços `monitor` e `dashboard`), acrescente a fonte em `config/monitor.yaml` e ajuste o
+detector no painel. Também dá para usar a linha de comando:
+`python tasks.py monitor-fit --source <id>` e `python tasks.py monitor --once`.
+
+O painel fica só em `127.0.0.1` e não tem autenticação: é para uso local.
+
 ## Saídas
 
 | Pasta | Conteúdo | Versionada |
@@ -114,7 +140,8 @@ para a monografia.
 config/            configuração em YAML (simulação, anomalias, SACLA, modelo, regras)
 docker/            imagens do PostgreSQL (Pagila + sacla.conf) e do Python
 src/sacla/         o SACLA: reader (1), events/sqlclass/features (2), model (3),
-                   explain/report (4), pipeline e cli (uso real)
+                   explain/report (4), pipeline e cli (uso real), monitor e store (Fase 6)
+src/dashboard/     painel local (Streamlit): fontes, bancos, alertas e triagem
 src/simlab/        bancada experimental: provisionamento, simulação, remapeamento, verificações
 src/evaluation/    rótulos, conjunto de dados, ajuste, métricas, regras, robustez, relatório
                    do experimento e figuras
@@ -136,3 +163,5 @@ existem só no manifesto e na avaliação.
   pontua como um pouco acima.
 - Sem atualização do histórico: o crescimento das tabelas faz a rotina batch legítima parecer
   atípica no teste (deriva de dados).
+- O monitor processa em lotes de uma janela (atraso de até ~6 min), não em tempo real, e o
+  painel é só local, sem autenticação.

@@ -6,4 +6,4 @@ real (pipeline, cli: `python -m sacla.cli fit|score`). O pacote não depende da 
 experimental (`simlab`) nem da avaliação (`evaluation`).
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

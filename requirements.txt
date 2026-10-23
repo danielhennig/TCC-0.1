@@ -8,4 +8,6 @@ PyYAML==6.0.3
 psycopg[binary]==3.3.6
 matplotlib==3.11.2
 Jinja2==3.1.6
+streamlit==1.66.0               # painel local (Fase 6); 1.65 exige pyarrow<26 (ver D49)
+altair==6.3.0                   # gráficos do painel (dependência da streamlit, usada diretamente)
 tzdata==2026.5                  # fusos horários também no Windows (zoneinfo)

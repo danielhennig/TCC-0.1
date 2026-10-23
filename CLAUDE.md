@@ -6,8 +6,12 @@ Fluxo: simuladores (`src/simlab`) → PostgreSQL 18 + Pagila → jsonlog → SAC
 
 ## Escopo fechado — não adicionar
 API REST, correlação com outros logs, pgAudit, WAL, Kafka/Spark, big data, Grafana,
-comparação entre vários algoritmos de ML, tempo real, bloqueio automático, interface web.
+comparação entre vários algoritmos de ML, bloqueio automático, interface acessível pela rede.
 O SACLA *auxilia* a identificação; nunca classifica algo como ataque.
+Exceção aprovada na Fase 6 (D47): painel local (Streamlit em 127.0.0.1, `src/dashboard/`) e
+monitor em lotes de uma janela (`sacla/monitor.py`), fora da avaliação do TCC: não podem
+mudar o modelo, os atributos nem os resultados; o painel nunca importa `simlab`/`evaluation`.
+Ações do painel que mudam o estado de uma fonte (limpar, reprocessar) usam `Store.locked`.
 
 ## Regras do projeto
 - Trabalho por fases (1 ambiente, 2 simuladores, 3 parser/agregação, 4 modelo/avaliação,
@@ -27,7 +31,9 @@ O SACLA *auxilia* a identificação; nunca classifica algo como ataque.
 (recria banco e logs e roda a simulação) · `retime` · `features [--window N --run-id ID]`
 (conjunto rotulado em `data/features/`) · `evaluate` (resultados em `results/experimentos/`)
 · `robustness --exp-id ID` · `report` (relatório do teste e figuras) · `fit`/`score` (SACLA
-no uso real, sem rótulos) · `test` · `lint` · `fmt` · `lock` · `psql`
+no uso real, sem rótulos) · `dashboard`/`dashboard-stop` (monitor + painel em
+http://localhost:8501) · `monitor --once` · `monitor-fit --source ID` · `build` (só a imagem)
+· `test` · `lint` · `fmt` · `lock` · `psql`
 · `shell`. Tudo roda nos containers do `docker-compose.yml`; o Docker Desktop precisa estar
 ligado. Não rode outro comando que use o banco enquanto um `simulate` estiver recriando-o;
 testes, lint, `features` e `evaluate` usam o serviço `analise` (sem IPs fixos) e podem rodar em

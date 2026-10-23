@@ -27,6 +27,7 @@ def ev(when: str, kind: str = "query", user: str = "u1", **fields: Any) -> dict[
         "ts_ms": ts(when),
         "user": user,
         "session_id": "s",
+        "dbname": "pagila",
         "remote_host": "10.0.0.1",
         "application_name": "app",
         "kind": kind,

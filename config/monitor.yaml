@@ -1,0 +1,43 @@
+# Monitor contínuo e painel do SACLA (Fase 6). Ferramenta de apoio para uso operacional,
+# FORA da avaliação do TCC: não muda nenhum resultado (docs/decisoes.md, D47–D50).
+#
+# O monitor acorda a cada `tick_seconds`, vê quais janelas de cada fonte já fecharam e as
+# pontua com o detector da fonte. Não é tempo real: o atraso é de até uma janela (5 min) mais
+# a tolerância de gravação do log.
+
+# Estado (SQLite) e detectores das fontes. No Docker, é o volume `sacla_monitor`.
+state_dir: /state
+tick_seconds: 5
+# Ao vivo, espera este tempo depois do fim de uma janela antes de pontuá-la (gravação do log).
+grace_seconds: 60
+# Janelas relidas antes do ponto de parada, para parear plano e comando na borda.
+lookback_windows: 1
+# Fonte ao vivo sem análise anterior: começa no máximo este tanto antes de agora.
+max_backfill_hours: 24
+# Uma análise trava a fonte por até este tempo (monitor e painel não analisam juntos).
+scan_lock_seconds: 300
+
+# Painel local (src/dashboard).
+dashboard:
+  refresh_seconds: 20         # atualização automática das páginas
+  max_alerts: 2000            # alertas carregados por página
+  timeline_hours_around: 3    # gráfico do alerta: horas antes e depois do episódio
+  hourly_bins_max_days: 3     # alertas no tempo: por hora até esta extensão; depois, por dia
+
+# Fontes supervisionadas: cada uma é um servidor PostgreSQL com jsonlog numa pasta acessível ao
+# container. Os bancos (dbname) de cada servidor aparecem no painel a partir do próprio log.
+sources:
+  - id: laboratorio
+    name: "Laboratório — PostgreSQL 18 (Docker)"
+    logs: /logs                  # volume pglogs do serviço db
+    clock: {mode: live}
+
+  - id: simulacao-s42
+    name: "Simulação sim-s42-28d — reprodução da semana de teste"
+    logs: data/runs/sim-s42-28d/retimed
+    # Reprodução: o relógio da fonte começa em `start` e anda `speed` vezes mais rápido
+    # (288 = um dia simulado a cada 5 min). Serve para ver o monitor funcionando sem tráfego
+    # ao vivo.
+    clock: {mode: replay, start: "2026-03-23T03:00:00Z", speed: 288}
+    # Período sugerido para ajustar o detector (o treino da simulação).
+    fit: {until: "2026-03-16T03:00:00Z"}

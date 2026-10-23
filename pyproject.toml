@@ -20,7 +20,7 @@ allowed-confusables = ["×", "∪", "–"]
 [tool.mypy]
 python_version = "3.11"
 mypy_path = "src"
-packages = ["sacla", "simlab", "evaluation"]
+packages = ["sacla", "simlab", "evaluation", "dashboard"]
 warn_unused_configs = true
 warn_redundant_casts = true
 warn_unused_ignores = true

@@ -9,7 +9,8 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-SACLA_DIR = Path(__file__).resolve().parents[1] / "src" / "sacla"
+SRC = Path(__file__).resolve().parents[1] / "src"
+SACLA_DIR = SRC / "sacla"
 FORBIDDEN = ("simlab", "evaluation")
 
 
@@ -24,11 +25,27 @@ def _imported_modules(path: Path) -> set[str]:
     return modules
 
 
-def test_sacla_does_not_import_simlab_or_evaluation() -> None:
-    offenders = {
-        f"{path.relative_to(SACLA_DIR)}: {module}"
-        for path in SACLA_DIR.rglob("*.py")
+def _offenders(package: str, forbidden: tuple[str, ...]) -> set[str]:
+    folder = SRC / package
+    return {
+        f"{path.relative_to(folder)}: {module}"
+        for path in folder.rglob("*.py")
         for module in _imported_modules(path)
-        if module.split(".")[0] in FORBIDDEN
+        if module.split(".")[0] in forbidden
     }
+
+
+def test_sacla_does_not_import_simlab_or_evaluation() -> None:
+    offenders = _offenders("sacla", FORBIDDEN)
     assert not offenders, f"imports proibidos no pacote sacla: {sorted(offenders)}"
+
+
+def test_sacla_does_not_depend_on_the_panel() -> None:
+    offenders = _offenders("sacla", ("dashboard", "streamlit", "altair"))
+    assert not offenders, f"o SACLA não pode depender da interface: {sorted(offenders)}"
+
+
+def test_panel_never_sees_labels() -> None:
+    """O painel só lê o estado do monitor: nada da simulação nem da avaliação (rótulos)."""
+    offenders = _offenders("dashboard", FORBIDDEN)
+    assert not offenders, f"imports proibidos no painel: {sorted(offenders)}"

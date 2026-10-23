@@ -173,6 +173,9 @@ def aggregate_windows(events: pd.DataFrame, settings: SaclaSettings) -> pd.DataF
     out["tables_set"] = grouped["tables"].agg(_union)
     ips = {key: frozenset(s.dropna()) for key, s in grouped["remote_host"]}
     out["ips_set"] = pd.Series(ips, dtype=object)
+    # Bancos da janela: contexto para relatório e painel; não é atributo do modelo.
+    dbs = {key: frozenset(s.dropna()) for key, s in grouped["dbname"]}
+    out["dbs_set"] = pd.Series(dbs, dtype=object)
     ids = {key: frozenset(int(q) for q in s.dropna()) for key, s in grouped["qid"]}
     out["query_ids_set"] = pd.Series(ids, dtype=object)
     out = out.reset_index()
@@ -300,6 +303,7 @@ def features_with_baselines(
 def _finish(features: pd.DataFrame) -> pd.DataFrame:
     features["tables"] = features["tables_set"].map(lambda t: "|".join(sorted(t)))
     features["ips"] = features["ips_set"].map(lambda t: "|".join(sorted(t)))
+    features["dbs"] = features["dbs_set"].map(lambda t: "|".join(sorted(t)))
     columns = [
         "user",
         "window_start_ms",
@@ -308,6 +312,7 @@ def _finish(features: pd.DataFrame) -> pd.DataFrame:
         *FEATURE_COLUMNS,
         "tables",
         "ips",
+        "dbs",
     ]
     return features[columns].reset_index(drop=True)
 

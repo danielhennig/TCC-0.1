@@ -286,6 +286,15 @@ rótulos. O limiar é definido como a fração de alertas aceita num período no
 Aplicado aos logs da simulação, o fluxo de uso real reproduziu exatamente os scores do modelo
 avaliado.
 
+### Ferramenta de apoio (fora da avaliação)
+
+Um monitor aplica o mesmo detector às janelas de 5 min assim que elas fecham, em lotes, não
+em tempo real. Um painel local mostra os servidores e bancos supervisionados, os alertas
+explicados e a triagem de cada um (D47–D50).
+- Nenhum número desta metodologia vem dessa ferramenta, e ela não muda o modelo avaliado.
+- Na semana de teste reproduzida, o monitor gerou exatamente os mesmos alertas que o
+  processamento em lote.
+
 ## 11. Ameaças à validade
 
 **Validade interna e de construto**

@@ -16,7 +16,7 @@ import gzip
 import json
 import logging
 import re
-from collections.abc import Iterator
+from collections.abc import Generator
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -86,7 +86,7 @@ def read_records(
     files: list[Path],
     report: ReadReport | None = None,
     zone_offsets_min: dict[str, int] | None = None,
-) -> Iterator[LogRecord]:
+) -> Generator[LogRecord]:
     report = report if report is not None else ReadReport()
     zones = zone_offsets_min if zone_offsets_min is not None else DEFAULT_ZONES
     for path in files:

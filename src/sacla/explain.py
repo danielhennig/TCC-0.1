@@ -39,6 +39,7 @@ class UserReference:
     hour_counts: tuple[int, ...]  # 24 contagens de janelas por hora local
     tables: frozenset[str]
     ips: frozenset[str]
+    dbs: frozenset[str] = frozenset()  # bancos acessados no histórico (contexto, fora do modelo)
 
 
 @dataclass(frozen=True)
@@ -65,8 +66,16 @@ def fit_reference(history: pd.DataFrame, features: tuple[str, ...]) -> dict[str,
             hour_counts=tuple(int(h) for h in hours),
             tables=_split_union(frame["tables"]),
             ips=_split_union(frame["ips"]),
+            dbs=_split_union(frame["dbs"]) if "dbs" in frame else frozenset(),
         )
     return references
+
+
+def new_databases(row: Mapping[Any, Any], reference: UserReference | None) -> list[str]:
+    """Bancos da janela que o usuário nunca acessou no histórico (contexto do alerta)."""
+    if reference is None:
+        return []
+    return sorted(_split(row.get("dbs", "")) - reference.dbs)
 
 
 def explain(

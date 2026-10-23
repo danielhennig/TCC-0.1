@@ -130,6 +130,7 @@
           {{ ep.linhas_retornadas|num }} linhas retornadas · {{ ep.linhas_afetadas|num }} afetadas<br>
           {% if ep.erros %}{{ ep.erros|num }} erros ({{ ep.erros_permissao|num }} de permissão)<br>{% endif %}
           {% if ep.falhas_autenticacao %}{{ ep.falhas_autenticacao|num }} falhas de autenticação<br>{% endif %}
+          {% if ep.bancos %}<span class="muted">banco:</span> {{ ep.bancos.replace("|", ", ") }}<br>{% endif %}
           {% if ep.tabelas %}<span class="muted">tabelas:</span> {{ ep.tabelas.replace("|", ", ") }}<br>{% endif %}
           {% if ep.ips %}<span class="muted">origem:</span> {{ ep.ips.replace("|", ", ") }}{% endif %}
         </td>

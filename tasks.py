@@ -22,6 +22,12 @@ RUN = [*COMPOSE, "run", "--rm", "-T", "sacla"]
 RUN_TTY = [*COMPOSE, "run", "--rm", "sacla"]
 # Serviço sem IPs fixos nem banco: pode rodar junto com uma simulação.
 ANALYSIS = [*COMPOSE, "run", "--rm", "-T", "analise"]
+# Monitor e painel (Fase 6): mesma imagem, com o volume de estado sacla_monitor.
+PANEL = [*COMPOSE, "--profile", "dashboard"]
+PANEL_URL = "http://localhost:8501"
+MONITOR_CLI = [*PANEL, "run", "--rm", "-T", "monitor", "python", "-m", "sacla.cli"]
+# Volumes recriados pelo reset (nome do projeto `sacla` + nome no docker-compose.yml).
+DB_VOLUMES = ["sacla_pgdata", "sacla_pglogs"]
 
 
 def run(cmd: list[str]) -> None:
@@ -46,7 +52,10 @@ def setup(extra: list[str]) -> None:
 
 def reset(extra: list[str]) -> None:
     """Recria o banco e os logs do zero, sem reconstruir as imagens."""
-    run([*COMPOSE, "--profile", "tools", "down", "--volumes", "--remove-orphans"])
+    # Para tudo (inclusive o painel, que lê os logs) e apaga só banco e logs: o estado do
+    # monitor (volume sacla_monitor: detectores e triagem) é preservado.
+    run([*COMPOSE, "--profile", "tools", "--profile", "dashboard", "down", "--remove-orphans"])
+    run(["docker", "volume", "rm", "--force", *DB_VOLUMES])
     run([*COMPOSE, "up", "--detach", "--wait", "db"])
     run([*RUN, "python", "-m", "simlab.cli", "provision", *extra])
 
@@ -137,6 +146,32 @@ def score(extra: list[str]) -> None:
     run([*ANALYSIS, "python", "-m", "sacla.cli", "score", *extra])
 
 
+def build(extra: list[str]) -> None:
+    """Reconstrói a imagem Python (ex.: depois de mudar requirements.txt), sem tocar no banco."""
+    run([*COMPOSE, "--profile", "tools", "build", "sacla", *extra])
+
+
+def dashboard(extra: list[str]) -> None:
+    """Sobe o monitor contínuo e o painel local (http://localhost:8501)."""
+    run([*PANEL, "up", "--detach", "monitor", "dashboard", *extra])
+    print(f"painel em {PANEL_URL} (o monitor analisa as fontes de config/monitor.yaml)")
+
+
+def dashboard_stop(extra: list[str]) -> None:
+    """Para o monitor e o painel (o estado e os detectores ficam no volume sacla_monitor)."""
+    run([*PANEL, "stop", "monitor", "dashboard", *extra])
+
+
+def monitor(extra: list[str]) -> None:
+    """Uma passada do monitor, para depuração (ex.: --once); usa o volume de estado."""
+    run([*MONITOR_CLI, "monitor", *extra])
+
+
+def monitor_fit(extra: list[str]) -> None:
+    """Ajusta o detector de uma fonte do monitor (ex.: --source simulacao-s42)."""
+    run([*MONITOR_CLI, "monitor-fit", *extra])
+
+
 def _run_with_commit() -> list[str]:
     """`docker compose run` com o commit atual do git (a imagem não tem git)."""
     commit = _capture(["git", "rev-parse", "--short", "HEAD"]).strip()
@@ -200,6 +235,11 @@ TASKS: dict[str, Callable[[list[str]], None]] = {
     "report": report,
     "fit": fit,
     "score": score,
+    "build": build,
+    "dashboard": dashboard,
+    "dashboard-stop": dashboard_stop,
+    "monitor": monitor,
+    "monitor-fit": monitor_fit,
     "test": test,
     "lint": lint,
     "fmt": fmt,

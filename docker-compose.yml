@@ -71,6 +71,47 @@ services:
       - .:/app
       - pglogs:/logs:ro
 
+  # Fase 6: monitor contínuo e painel local (fora da avaliação do TCC; docs/decisoes.md D47–D50).
+  # `python tasks.py dashboard` sobe os dois; o estado (SQLite e detectores) fica no volume
+  # sacla_monitor, que o `reset`/`simulate` NÃO apaga.
+  monitor:
+    image: sacla-py:3.13.17
+    profiles: ["dashboard"]
+    env_file: .env
+    working_dir: /app
+    command: ["python", "-m", "sacla.cli", "monitor"]
+    restart: unless-stopped
+    stop_grace_period: 15s
+    volumes:
+      - .:/app
+      - pglogs:/logs:ro
+      - sacla_monitor:/state
+
+  dashboard:
+    image: sacla-py:3.13.17
+    profiles: ["dashboard"]
+    env_file: .env
+    working_dir: /app
+    command:
+      - streamlit
+      - run
+      - src/dashboard/app.py
+      - --server.address=0.0.0.0
+      - --server.port=8501
+      - --server.headless=true
+      - --browser.gatherUsageStats=false
+      - --client.toolbarMode=minimal
+    restart: unless-stopped
+    # Só na própria máquina: o painel não tem autenticação (uso local, uma pessoa).
+    ports:
+      - "127.0.0.1:8501:8501"
+    volumes:
+      - .:/app
+      - pglogs:/logs:ro
+      - sacla_monitor:/state
+    depends_on:
+      - monitor
+
 networks:
   rede_lan:
     ipam:
@@ -85,3 +126,5 @@ networks:
 volumes:
   pgdata:
   pglogs:
+  sacla_monitor:
+    name: sacla_monitor

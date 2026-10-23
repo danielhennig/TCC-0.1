@@ -47,6 +47,7 @@ _PERMISSION = re.compile(r"^permission denied for (?:table|view|materialized vie
 EVENT_COLUMNS = (
     "ts_ms",
     "user",
+    "dbname",
     "session_id",
     "remote_host",
     "application_name",
@@ -65,6 +66,7 @@ EVENT_COLUMNS = (
 class _Event:
     ts_ms: int
     user: str
+    dbname: str | None
     session_id: str | None
     remote_host: str | None
     application_name: str | None
@@ -106,6 +108,7 @@ def extract_events(
     report = report if report is not None else ParseReport()
     events: list[_Event] = []
     users: dict[str, str] = {}  # session_id -> usuário (linhas sem o campo user)
+    databases: dict[str, str] = {}  # session_id -> banco (linhas sem o campo dbname)
     pending_plan: dict[str, _Plan] = {}  # protocolo simples: plano à espera do comando
     last_query: dict[str, _Event] = {}  # protocolo estendido: comando à espera do plano
 
@@ -117,14 +120,17 @@ def extract_events(
         if rec.user:
             users[sid] = rec.user
         user = rec.user or users.get(sid)
+        if rec.dbname:
+            databases[sid] = rec.dbname
+        dbname = rec.dbname or databases.get(sid)
         if user is None or user in settings.ignore_users:
             report.ignored_lines += 1
             continue
         message = rec.message
 
-        def new(kind: str, rec: Any = rec, user: str = user) -> _Event:
+        def new(kind: str, rec: Any = rec, user: str = user, dbname: str | None = dbname) -> _Event:
             return _Event(
-                rec.ts_ms, user, rec.session_id, rec.remote_host, rec.application_name, kind
+                rec.ts_ms, user, dbname, rec.session_id, rec.remote_host, rec.application_name, kind
             )
 
         if _PLAN.match(message):
@@ -248,6 +254,7 @@ def _frame(events: list[_Event]) -> pd.DataFrame:
         {
             "ts_ms": [e.ts_ms for e in events],
             "user": [e.user for e in events],
+            "dbname": [e.dbname for e in events],
             "session_id": [e.session_id for e in events],
             "remote_host": [e.remote_host for e in events],
             "application_name": [e.application_name for e in events],

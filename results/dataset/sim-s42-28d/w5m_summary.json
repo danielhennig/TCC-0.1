@@ -132,7 +132,7 @@
     "passed": true
   },
   "timings_s": {
-    "leitura_e_eventos_s": 5.68,
-    "agregacao_s": 3.49
+    "leitura_e_eventos_s": 5.56,
+    "agregacao_s": 4.94
   }
 }

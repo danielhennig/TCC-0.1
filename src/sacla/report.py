@@ -25,7 +25,14 @@ import pandas as pd
 
 from sacla import __version__
 from sacla.config import SaclaSettings
-from sacla.explain import UserReference, describe, explain, format_decimal, format_number
+from sacla.explain import (
+    UserReference,
+    describe,
+    explain,
+    format_decimal,
+    format_number,
+    new_databases,
+)
 from sacla.features import MS_PER_MIN
 
 DISCLAIMER = (
@@ -47,6 +54,23 @@ SUMMARY_COLUMNS = {
     "linhas_retornadas": "rows_returned_sum",
     "linhas_afetadas": "rows_affected_sum",
 }
+DESCRIBED_COLUMNS = [
+    "usuario",
+    "inicio",
+    "fim",
+    "score",
+    "percentil_historico",
+    "sem_historico",
+    "explicacao",
+    "atributos",
+    *SUMMARY_COLUMNS,
+    "tabelas",
+    "ips",
+    "bancos",
+    "bancos_novos",
+    "window_start_ms",
+    "window_end_ms",
+]
 TEMPLATES = Path(__file__).resolve().parent / "templates"
 
 
@@ -169,15 +193,19 @@ def render_html(report: Report, settings: SaclaSettings) -> str:
     )
 
 
-def _alerts_table(
-    flagged: pd.DataFrame,
+def describe_windows(
+    windows: pd.DataFrame,
     sorted_train: np.ndarray[Any, Any],
     references: dict[str, UserReference],
     settings: SaclaSettings,
 ) -> pd.DataFrame:
+    """Explicação e resumo de cada janela pontuada (coluna `score`).
+
+    Usada pelo relatório em lote e pelo monitor contínuo, para que os dois expliquem igual.
+    """
     rows = []
     timezone = settings.features.timezone
-    for row in flagged.to_dict(orient="records"):
+    for row in windows.to_dict(orient="records"):
         reference = references.get(str(row["user"]))
         deviations = explain(row, reference, settings.report)
         percentile = float(np.searchsorted(sorted_train, row["score"], side="left")) / max(
@@ -185,12 +213,10 @@ def _alerts_table(
         )
         rows.append(
             {
-                "episodio": row["episodio"],
                 "usuario": row["user"],
                 "inicio": row["window_start_local"],
                 "fim": local_stamp(int(row["window_end_ms"]), timezone),
                 "score": round(float(row["score"]), 6),
-                "posicao": row["posicao"],
                 "percentil_historico": round(percentile, 4),
                 "sem_historico": reference is None,
                 "explicacao": " | ".join(describe(deviations, reference)),
@@ -198,26 +224,25 @@ def _alerts_table(
                 **{column: int(row[feature]) for column, feature in SUMMARY_COLUMNS.items()},
                 "tabelas": row["tables"],
                 "ips": row["ips"],
+                "bancos": row.get("dbs", ""),
+                "bancos_novos": "|".join(new_databases(row, reference)),
                 "window_start_ms": int(row["window_start_ms"]),
+                "window_end_ms": int(row["window_end_ms"]),
             }
         )
-    columns = [
-        "episodio",
-        "usuario",
-        "inicio",
-        "fim",
-        "score",
-        "posicao",
-        "percentil_historico",
-        "sem_historico",
-        "explicacao",
-        "atributos",
-        *SUMMARY_COLUMNS,
-        "tabelas",
-        "ips",
-        "window_start_ms",
-    ]
-    table = pd.DataFrame(rows, columns=columns)
+    return pd.DataFrame(rows, columns=DESCRIBED_COLUMNS)
+
+
+def _alerts_table(
+    flagged: pd.DataFrame,
+    sorted_train: np.ndarray[Any, Any],
+    references: dict[str, UserReference],
+    settings: SaclaSettings,
+) -> pd.DataFrame:
+    table = describe_windows(flagged, sorted_train, references, settings)
+    table.insert(0, "episodio", flagged["episodio"].to_numpy())
+    table.insert(list(table.columns).index("score") + 1, "posicao", flagged["posicao"].to_numpy())
+    table = table.drop(columns="window_end_ms")
     return table.sort_values(["episodio", "window_start_ms"]).reset_index(drop=True)
 
 
@@ -240,6 +265,7 @@ def _episodes_table(alerts: pd.DataFrame) -> pd.DataFrame:
                 **{c: int(group[c].sum()) for c in SUMMARY_COLUMNS},
                 "tabelas": "|".join(sorted(_union(group["tabelas"]))),
                 "ips": "|".join(sorted(_union(group["ips"]))),
+                "bancos": "|".join(sorted(_union(group["bancos"]))),
             }
         )
     columns = [
@@ -254,6 +280,7 @@ def _episodes_table(alerts: pd.DataFrame) -> pd.DataFrame:
         *SUMMARY_COLUMNS,
         "tabelas",
         "ips",
+        "bancos",
     ]
     return pd.DataFrame(rows, columns=columns)
 
