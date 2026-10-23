@@ -17,13 +17,13 @@ TOKENS = {
         "series": ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6"],
         "ink": "#0b0b0b",
         "muted": "#898781",
-        "surface": "#ffffff",
+        "surface": "#F4F6F7",  # papel do tema (.streamlit/config.toml)
     },
     "dark": {
         "series": ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9"],
         "ink": "#f0efec",
         "muted": "#898781",
-        "surface": "#0e1117",
+        "surface": "#111A22",
     },
 }
 
@@ -53,7 +53,8 @@ def alerts_over_time(data: pd.DataFrame, mode: str | None, hourly: bool) -> Any:
                 "banco:N",
                 title="Banco",
                 scale=alt.Scale(domain=banks, range=t["series"][: len(banks)]),
-                legend=alt.Legend(orient="top"),
+                # Um banco só: a legenda repetiria o título (o banco está na tabela e na dica).
+                legend=alt.Legend(orient="top") if len(banks) > 1 else None,
             ),
             tooltip=[
                 alt.Tooltip("alertas:Q", title="Alertas"),

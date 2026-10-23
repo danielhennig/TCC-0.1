@@ -7,8 +7,15 @@ import streamlit as st
 from dashboard import common
 from dashboard.pages import alerts, data, databases, overview, users
 
-st.set_page_config(page_title="SACLA — painel", page_icon=":material/shield:", layout="wide")
+st.set_page_config(
+    page_title="SACLA",
+    page_icon=":material/shield:",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
+common.style()
 
+# Navegação no topo; a barra lateral fica só para o console (marca e alertas a triar).
 pages = st.navigation(
     [
         st.Page(
@@ -33,9 +40,8 @@ pages = st.navigation(
             users.render, title="Usuários", icon=":material/person_search:", url_path="usuarios"
         ),
         st.Page(data.render, title="Dados", icon=":material/table_view:", url_path="dados"),
-    ]
+    ],
+    position="top",
 )
-with st.sidebar:
-    st.markdown("**SACLA** — acessos atípicos no PostgreSQL")
-common.new_alerts_notice()
+common.console()
 pages.run()

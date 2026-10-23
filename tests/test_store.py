@@ -126,3 +126,14 @@ def test_prune_removes_untriaged_alerts_the_detector_no_longer_raises(tmp_path: 
     assert removed == 1  # o de 0 min; o de 5 min foi triado e fica, o de 10 min continua
     assert sorted(store.alerts("lab")["window_start_ms"]) == [5 * MIN, 10 * MIN]
     assert store.has_windows("lab") is False
+
+
+def test_empty_scans_are_not_kept_but_errors_are(tmp_path: Path) -> None:
+    store = Store(tmp_path / "s.sqlite")
+    empty = store.start_scan("lab", 0, 5 * MIN)
+    store.finish_scan(empty, 0, 0)
+    failed = store.start_scan("lab", 0, 5 * MIN)
+    store.finish_scan(failed, 0, 0, "FileNotFoundError")
+    useful = store.start_scan("lab", 0, 5 * MIN)
+    store.finish_scan(useful, 3, 1)
+    assert sorted(store.scans()["id"]) == sorted([failed, useful])

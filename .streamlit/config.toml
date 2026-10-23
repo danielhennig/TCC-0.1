@@ -1,0 +1,92 @@
+# Tema do painel do SACLA (src/dashboard). Identidade visual: docs/decisoes.md, D51.
+#
+# Ideia: um console de plantão para quem faz a triagem de acessos atípicos. O conteúdo fica
+# em "papel" claro e quieto; a barra lateral é o console. O vermelho e o âmbar ficam reservados
+# para alertas (nunca para seleção ou decoração); a interação usa o índigo.
+
+[server]
+enableStaticServing = true      # fontes servidas pelo próprio painel (sem internet)
+
+[client]
+toolbarMode = "minimal"
+
+[theme]
+font = "Atkinson Hyperlegible Next, sans-serif"
+codeFont = "Atkinson Hyperlegible Mono, monospace"
+baseFontSize = 16
+headingFontSizes = ["2.125rem", "1.375rem", "1.125rem"]
+headingFontWeights = [700, 650, 600]
+metricValueFontWeight = 650
+baseRadius = "0.375rem"
+buttonRadius = "0.375rem"
+showSidebarBorder = false
+paddingTop = "2.5rem"
+
+# Atkinson Hyperlegible (Braille Institute; licença OFL em static/fonts): letras e números
+# fáceis de distinguir (0/O, 1/l/I), o que importa para quem lê usuários, IPs e contagens.
+[[theme.fontFaces]]
+family = "Atkinson Hyperlegible Next"
+url = "app/static/fonts/AtkinsonHyperlegibleNext-wght.ttf"
+weight = "200 800"
+style = "normal"
+
+[[theme.fontFaces]]
+family = "Atkinson Hyperlegible Next"
+url = "app/static/fonts/AtkinsonHyperlegibleNext-Italic-wght.ttf"
+weight = "200 800"
+style = "italic"
+
+[[theme.fontFaces]]
+family = "Atkinson Hyperlegible Mono"
+url = "app/static/fonts/AtkinsonHyperlegibleMono-wght.ttf"
+weight = "200 800"
+style = "normal"
+
+[theme.light]
+primaryColor = "#2E4A8C"          # índigo: botões, filtros, seleção
+backgroundColor = "#F4F6F7"       # papel
+secondaryBackgroundColor = "#E6EBEE"
+textColor = "#18232C"             # tinta
+borderColor = "#D3DADF"
+linkColor = "#2E4A8C"
+codeTextColor = "#2B3B47"
+codeBackgroundColor = "#E6EBEE"
+dataframeHeaderBackgroundColor = "#E6EBEE"
+# Cores de status (paleta de status da skill de visualização): só para alertas e estados.
+redColor = "#D03B3B"
+orangeColor = "#D9822B"
+greenColor = "#2E8540"
+blueColor = "#2E6FB7"
+grayColor = "#7A858E"
+
+[theme.light.sidebar]
+backgroundColor = "#16222D"       # console
+secondaryBackgroundColor = "#1F2E3B"
+textColor = "#DCE4EA"
+primaryColor = "#9DB5EA"
+borderColor = "#2A3A48"
+codeTextColor = "#DCE4EA"
+codeBackgroundColor = "#1F2E3B"
+
+[theme.dark]
+primaryColor = "#8EA9E8"
+backgroundColor = "#111A22"
+secondaryBackgroundColor = "#1A2530"
+textColor = "#E3E9EE"
+borderColor = "#2A3743"
+linkColor = "#8EA9E8"
+codeTextColor = "#D7E0E7"
+codeBackgroundColor = "#1A2530"
+dataframeHeaderBackgroundColor = "#1A2530"
+redColor = "#E05A5A"
+orangeColor = "#F0A93B"
+greenColor = "#4CAF63"
+blueColor = "#5B9BE0"
+grayColor = "#8B96A0"
+
+[theme.dark.sidebar]
+backgroundColor = "#0C141B"
+secondaryBackgroundColor = "#16222D"
+textColor = "#DCE4EA"
+primaryColor = "#9DB5EA"
+borderColor = "#22313D"

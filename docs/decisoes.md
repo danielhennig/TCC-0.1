@@ -925,3 +925,49 @@ campo herdam o banco da sessão, como já acontecia com o usuário. As janelas g
   comandos às 00h ficou abaixo do limiar. Para alertar nesses casos, a combinação IF ∪ regras
   (a melhor cobertura na avaliação, D46) seria o próximo passo, levando as regras para o
   pacote `sacla`.
+
+**D51 — Identidade visual do painel** (`.streamlit/config.toml`, `src/dashboard/common.py`).
+Feita com o plugin `frontend-design` (skill oficial da Anthropic), em duas passadas: plano de
+design, revisão contra os padrões genéricos e, depois do código, autocrítica com capturas de
+tela.
+- **Assunto e público:** um console de plantão para uma pessoa que faz a triagem de acessos
+  atípicos a bancos PostgreSQL; as telas também vão para a monografia.
+- **Cores:**
+  - "papel" `#F4F6F7` no conteúdo e "tinta" `#18232C` no texto;
+  - **índigo** `#2E4A8C` em tudo que é interação (botões, filtros, seleção, barras de
+    score);
+  - console lateral `#16222D`;
+  - **âmbar** `#F0A93B` só no contador de alertas que aguardam triagem, o único elemento em
+    destaque.
+- **O vermelho padrão do Streamlit saiu de filtros e botões.** Antes, tudo parecia alarme.
+  Vermelho e âmbar ficaram reservados para status.
+- **Status de triagem com significado:**
+  - novo = âmbar (pede atenção);
+  - em análise = azul;
+  - suspeito confirmado = vermelho;
+  - falso positivo = cinza (encerrado).
+  Antes, "novo" era vermelho, como um suspeito já confirmado.
+- **Modo escuro:** passos próprios, sem preto puro.
+- **Tipografia: Atkinson Hyperlegible Next, e Mono para código** (Braille Institute; licença
+  OFL; servida pelo próprio painel em `src/dashboard/static/fonts`, sem internet).
+  - Foi desenhada para distinguir caracteres parecidos (0/O, 1/l/I), o que importa para quem
+    lê usuários como `atendente_01`, IPs e contagens.
+  - O zero cortado é a marca dessa fonte e foi mantido de propósito.
+- **Estrutura:**
+  - navegação no topo, deixando a barra lateral só para o console;
+  - na visão geral, a situação vem numa frase ("Supervisionando 1 banco em 2 servidores…"),
+    em vez de uma fileira de cartões de número grande;
+  - os servidores aparecem num quadro único, e não em cartões repetidos;
+  - os filtros de alertas começam pelo período e pelo status.
+- **Textos:** saíram os vícios de modelo apontados pela skill:
+  - metadados ligados por " · ";
+  - nomes no formato "Laboratório — PostgreSQL";
+  - estados vazios vagos.
+  Os botões dizem o que fazem ("Ajustar detector", "Salvar triagem").
+- **Ajustes de dados vistos nas capturas:**
+  - o período de cada fonte conta da última janela COM atividade (uma reprodução terminada
+    não deixa o período vazio);
+  - a fonte mostra "Reprodução concluída: o log vai até …";
+  - com um só banco, o gráfico não tem legenda;
+  - análises sem janelas nem erro não são mais guardadas. Depois do fim da reprodução eram
+    uma linha a cada 5 s; 1.840 linhas vazias foram removidas do estado existente.

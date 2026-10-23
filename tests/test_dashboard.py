@@ -16,6 +16,7 @@ from dashboard import state
 from sacla.monitor import Monitor, fit_source, load_monitor_settings
 from sacla.report import local_stamp
 from test_monitor import SETTINGS, TEST_DAY, FakeClock, write_day
+from test_store import MIN, described
 
 PAGES = ("overview", "databases", "alerts", "users", "data")
 
@@ -88,9 +89,12 @@ def test_main_app_shows_the_overview_and_the_new_alerts_counter(dashboard_state:
     app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "src/dashboard/app.py"))
     app.run(timeout=60)
     assert not app.exception, app.exception
-    metrics = {m.label: m.value for m in app.metric}
-    assert metrics["Fontes supervisionadas"] == "2"
-    assert int(metrics["Alertas novos"]) > 0
+    # A visão geral resume a situação numa frase; o console lateral mostra quantos alertas
+    # aguardam triagem.
+    html = " ".join(element.proto.body for element in app.get("html"))
+    assert "Supervisionando <strong>2 bancos</strong> em 2 servidores" in html  # pagila e rh
+    counter = html.split('class="valor')[1].split(">")[1].split("<")[0]
+    assert int(counter) > 0 and "aguardam triagem" in html
 
 
 def test_alert_detail_and_triage_render_for_a_selected_episode(dashboard_state: Path) -> None:
@@ -111,12 +115,14 @@ def test_periods_are_relative_to_the_latest_window_of_each_source(
     from dashboard import common
 
     store = common.store()
-    store.update_state("vazia", last_window_end_ms=2_000_000_000_000)  # "ao vivo", outubro
+    october = 2_000_000_000_000 // MIN  # uma fonte "ao vivo", com dados em outubro
+    store.save_windows("vazia", described([october]), [False])
     periods = state.source_periods(store, ["sim", "vazia"], "Último dia")
-    sim_end = store.state("sim").last_window_end_ms
-    assert periods["sim"].until_ms == sim_end  # março: não some por causa da fonte ao vivo
-    assert periods["vazia"].until_ms == 2_000_000_000_000
-    store.update_state("vazia", last_window_end_ms=None)
+    # Cada fonte conta da própria janela mais recente com atividade: a simulação (março) não
+    # some por causa da fonte ao vivo, nem fica vazia se o relógio passar do fim do log.
+    assert periods["sim"].until_ms == store.latest_window_end("sim")
+    assert periods["vazia"].until_ms == (october + 5) * MIN
+    store.reset_source("vazia")
 
 
 def test_alerts_without_database_are_kept_under_their_own_label() -> None:

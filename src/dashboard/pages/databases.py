@@ -31,15 +31,23 @@ def render() -> None:
             head.subheader(source.name)
             with badge:
                 common.source_status_badge(str(row["status"]))
-            st.caption(
-                f"`{source.id}` · logs em `{source.logs}` · relógio: {row['relógio']} · "
-                f"analisado até {row['analisado até']} · última análise {row['última análise']}"
-            )
+            facts = st.columns(4)
+            facts[0].caption(f"Identificador `{source.id}`")
+            facts[1].caption(f"Logs em `{source.logs}`")
+            facts[2].caption(str(row["relógio"]))
+            if row["analisado até"] == "—":
+                facts[3].caption("Ainda não analisado")
+            else:
+                facts[3].caption(
+                    f"Analisado até {row['analisado até']}, última análise {row['última análise']}"
+                )
             if row["último erro"]:
                 st.error(f"Último erro: {row['último erro']}", icon=":material/error:")
             mine = banks[banks["fonte"] == source.name].drop(columns="fonte")
             if mine.empty:
-                st.caption("Nenhuma janela analisada ainda.")
+                st.caption(
+                    "Ainda não há janelas analisadas. Ajuste o detector abaixo para começar."
+                )
             else:
                 mine = mine.assign(
                     **{

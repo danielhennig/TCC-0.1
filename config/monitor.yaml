@@ -28,12 +28,12 @@ dashboard:
 # container. Os bancos (dbname) de cada servidor aparecem no painel a partir do próprio log.
 sources:
   - id: laboratorio
-    name: "Laboratório — PostgreSQL 18 (Docker)"
+    name: "Laboratório (PostgreSQL 18 no Docker)"
     logs: /logs                  # volume pglogs do serviço db
     clock: {mode: live}
 
   - id: simulacao-s42
-    name: "Simulação sim-s42-28d — reprodução da semana de teste"
+    name: "Simulação, semana de teste"
     logs: data/runs/sim-s42-28d/retimed
     # Reprodução: o relógio da fonte começa em `start` e anda `speed` vezes mais rápido
     # (288 = um dia simulado a cada 5 min). Serve para ver o monitor funcionando sem tráfego

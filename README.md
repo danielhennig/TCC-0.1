@@ -117,6 +117,8 @@ detector no painel. Também dá para usar a linha de comando:
 
 O painel fica só em `127.0.0.1` e não tem autenticação: é para uso local.
 
+O visual (cores, tipografia e modo escuro) fica em `.streamlit/config.toml` (D51). As fontes Atkinson Hyperlegible são servidas pelo próprio painel, com a licença OFL em `src/dashboard/static/fonts`.
+
 ## Saídas
 
 | Pasta | Conteúdo | Versionada |

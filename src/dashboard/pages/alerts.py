@@ -29,26 +29,29 @@ def render() -> None:
     store = common.store()
     settings = common.monitor_settings()
 
-    filters = st.columns([2, 2, 2, 3])
-    chosen_sources = filters[0].multiselect(
-        "Fonte", list(names), default=list(names), format_func=lambda key: names[key]
-    )
-    preset = common.period_preset("alertas")
-    periods = state.source_periods(store, chosen_sources, preset)
-    alerts = state.prepare_alerts(
-        state.load_alerts(store, periods, settings.max_alerts), common.sacla_settings()
-    )
-    banks = sorted({b for v in alerts.get("bancos", []) for b in v})
-    chosen_banks = filters[1].multiselect("Banco", banks, default=banks)
-    users = sorted(alerts["user"].unique()) if not alerts.empty else []
-    chosen_users = filters[2].multiselect("Usuário", users, placeholder="Todos")
-    chosen_status = filters[3].pills(
+    # Filtros: primeiro quando e em que situação (período e status); depois o quê.
+    when = st.columns([5, 6])
+    what = st.columns([3, 2, 2, 2])
+    with when[0]:
+        preset = common.period_preset("alertas")
+    chosen_status = when[1].pills(
         "Status",
         list(TRIAGE_STATUSES),
         selection_mode="multi",
         default=["novo", "em análise"],
     )
-    min_score = st.slider("Score mínimo", 0.0, 1.0, 0.0, 0.01)
+    chosen_sources = what[0].multiselect(
+        "Fonte", list(names), default=list(names), format_func=lambda key: names[key]
+    )
+    periods = state.source_periods(store, chosen_sources, preset)
+    alerts = state.prepare_alerts(
+        state.load_alerts(store, periods, settings.max_alerts), common.sacla_settings()
+    )
+    banks = sorted({b for v in alerts.get("bancos", []) for b in v})
+    chosen_banks = what[1].multiselect("Banco", banks, default=banks)
+    users = sorted(alerts["user"].unique()) if not alerts.empty else []
+    chosen_users = what[2].multiselect("Usuário", users, placeholder="Todos")
+    min_score = what[3].slider("Score mínimo", 0.0, 1.0, 0.0, 0.01)
 
     if not alerts.empty:
         keep = alerts["status"].isin(chosen_status or list(TRIAGE_STATUSES))
@@ -60,11 +63,14 @@ def render() -> None:
 
     episodes = state.episodes_table(alerts)
     st.caption(
-        f"{len(episodes)} episódio(s), {len(alerts)} janela(s) sinalizada(s) · período: "
-        f"{state.periods_label(periods, names, common.timezone())}"
+        f"{len(episodes)} episódio(s) com {len(alerts)} janela(s) sinalizada(s). Período: "
+        f"{state.periods_label(periods, names, common.timezone())}."
     )
     if episodes.empty:
-        st.success("Nenhum alerta com esses filtros.", icon=":material/check_circle:")
+        st.success(
+            "Nenhum alerta com esses filtros. Para ver os já triados, inclua outros status.",
+            icon=":material/check_circle:",
+        )
         return
 
     st.session_state[SHOWN_KEYS] = list(episodes["chave"])
@@ -95,7 +101,7 @@ def render() -> None:
     selected = st.session_state.get(SELECTED)
     match = episodes[episodes["chave"] == selected] if selected else episodes.iloc[0:0]
     if match.empty:
-        st.info("Selecione um episódio na tabela para ver o detalhe e fazer a triagem.")
+        st.info("Marque um episódio na tabela para ver por que foi sinalizado e fazer a triagem.")
         return
     episode = match.iloc[0]
     _detail(episode, alerts[alerts["chave"] == episode["chave"]])
@@ -107,7 +113,11 @@ def _detail(episode: pd.Series, alerts: pd.DataFrame) -> None:
     tz = common.timezone()
     st.divider()
     head, badge = st.columns([5, 1])
-    head.subheader(f"{episode['usuário']} · {episode['início']} · {episode['janelas']} janela(s)")
+    head.subheader(f"{episode['usuário']}, {episode['início']}")
+    head.caption(
+        f"Episódio de {episode['janelas']} janela(s) sinalizada(s) seguidas, "
+        f"no servidor {common.source_names().get(str(episode['source_id']), episode['source_id'])}."
+    )
     with badge:
         common.status_badge(str(episode["status"]))
 

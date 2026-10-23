@@ -1,4 +1,4 @@
-"""Peças comuns às páginas do painel: configuração, estado, período, status e aviso de alertas."""
+"""Peças comuns às páginas do painel: configuração, estado, período, status e o console lateral."""
 
 from __future__ import annotations
 
@@ -17,6 +17,35 @@ DISCLAIMER = (
     "Um alerta indica comportamento atípico para o usuário em relação ao próprio histórico, "
     "não um ataque. A decisão é de quem analisa."
 )
+
+# O tema (cores, fontes, raio) está em .streamlit/config.toml. Aqui fica só o que o tema não
+# cobre: a marca e o contador do console lateral e a frase de situação da visão geral.
+_STYLE = """
+<style>
+.sacla-marca { margin: 0.25rem 0 1.5rem 0; }
+.sacla-marca .nome {
+  font-size: 1.75rem; font-weight: 750; letter-spacing: -0.01em; line-height: 1;
+}
+.sacla-marca .linha { font-size: 0.875rem; opacity: 0.72; margin-top: 0.35rem; }
+.sacla-plantao { padding: 0.25rem 0 0.75rem 0; }
+.sacla-plantao .valor {
+  display: block; font-size: 3.5rem; font-weight: 750; line-height: 1;
+  font-variant-numeric: lining-nums; color: #F0A93B;
+}
+.sacla-plantao .valor.zero { color: inherit; opacity: 0.55; }
+.sacla-plantao .rotulo { display: block; font-size: 0.95rem; margin-top: 0.4rem; }
+.sacla-plantao .atualiza { display: block; font-size: 0.8rem; opacity: 0.6; margin-top: 0.6rem; }
+.sacla-resumo {
+  font-size: 1.375rem; line-height: 1.45; max-width: 46rem; margin: 0.25rem 0 0.5rem 0;
+}
+.sacla-resumo strong { font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+"""
+
+
+def style() -> None:
+    st.html(_STYLE)
 
 
 @st.cache_resource
@@ -102,12 +131,17 @@ def data_view(frame: pd.DataFrame, label: str = "Ver os dados do gráfico") -> N
         st.dataframe(frame, hide_index=True)
 
 
-def new_alerts_notice() -> None:
-    """Contador de alertas novos na barra lateral, com aviso quando o número sobe."""
+def console() -> None:
+    """Barra lateral: a marca e o contador de alertas que aguardam triagem.
 
-    @st.fragment(run_every=monitor_settings().refresh_seconds)
-    def notice() -> None:
-        new = state.count_new(store().alerts(limit=monitor_settings().max_alerts))
+    O contador é o único elemento em destaque do painel. Ele se atualiza sozinho e avisa na
+    tela quando o número sobe.
+    """
+    settings = monitor_settings()
+
+    @st.fragment(run_every=settings.refresh_seconds)
+    def counter() -> None:
+        new = state.count_new(store().alerts(limit=settings.max_alerts))
         previous = st.session_state.get("alertas_novos_vistos")
         if previous is not None and new > previous:
             st.toast(
@@ -115,8 +149,18 @@ def new_alerts_notice() -> None:
                 icon=":material/notification_important:",
             )
         st.session_state["alertas_novos_vistos"] = new
-        st.metric("Alertas novos", new, border=True)
-        st.caption(f"Atualiza a cada {int(monitor_settings().refresh_seconds)} s")
+        label = "alerta aguarda triagem" if new == 1 else "alertas aguardam triagem"
+        zero = " zero" if new == 0 else ""
+        st.html(
+            f'<div class="sacla-plantao"><span class="valor{zero}">{int(new)}</span>'
+            f'<span class="rotulo">{label}</span>'
+            f'<span class="atualiza">Atualiza a cada {int(settings.refresh_seconds)} s</span>'
+            "</div>"
+        )
 
     with st.sidebar:
-        notice()
+        st.html(
+            '<div class="sacla-marca"><div class="nome">SACLA</div>'
+            '<div class="linha">Acessos atípicos ao PostgreSQL</div></div>'
+        )
+        counter()

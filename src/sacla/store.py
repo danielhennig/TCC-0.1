@@ -287,7 +287,12 @@ class Store:
     def finish_scan(
         self, scan_id: int, windows: int, alerts: int, error: str | None = None
     ) -> None:
+        """Fecha a análise. Uma análise sem janelas e sem erro não é guardada: depois do fim de
+        uma reprodução (ou numa fonte parada) seriam milhares de linhas vazias por dia."""
         with self._connect() as db:
+            if windows == 0 and error is None:
+                db.execute("DELETE FROM scans WHERE id = ?", (scan_id,))
+                return
             db.execute(
                 "UPDATE scans SET finished_at = ?, windows = ?, alerts = ?, error = ? WHERE id = ?",
                 (time.time(), windows, alerts, error, scan_id),
@@ -423,6 +428,14 @@ class Store:
             stale = [r["id"] for r in rows if (r["user"], r["window_start_ms"]) not in keep]
             db.executemany("DELETE FROM alerts WHERE id = ?", [(i,) for i in stale])
         return len(stale)
+
+    def latest_window_end(self, source_id: str) -> int | None:
+        """Fim da janela mais recente COM atividade (a reprodução pode ter passado do log)."""
+        with self._connect() as db:
+            row = db.execute(
+                "SELECT MAX(window_end_ms) AS fim FROM windows WHERE source_id = ?", (source_id,)
+            ).fetchone()
+        return None if row["fim"] is None else int(row["fim"])
 
     def has_windows(self, source_id: str) -> bool:
         with self._connect() as db:

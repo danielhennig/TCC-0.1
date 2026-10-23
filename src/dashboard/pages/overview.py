@@ -8,9 +8,12 @@ from dashboard import charts, common, state
 from sacla.explain import format_number
 
 
+def _plural(count: int, singular: str, plural: str) -> str:
+    return f"{format_number(count)} {singular if count == 1 else plural}"
+
+
 def render() -> None:
     st.title("Visão geral")
-    st.caption(common.DISCLAIMER)
     settings = common.monitor_settings()
     names = common.source_names()
     preset = common.period_preset("visao")
@@ -26,46 +29,54 @@ def render() -> None:
         alerts = state.prepare_alerts(
             state.load_alerts(store, periods, settings.max_alerts), common.sacla_settings()
         )
-        banks = {b for v in windows.get("dbs", []) for b in state.databases_of(v)}
+        banks = state.known_databases(store)
+        users = windows["user"].nunique() if not windows.empty else 0
+        pending = state.count_new(alerts)
 
-        cols = st.columns(5)
-        cols[0].metric(
-            "Fontes supervisionadas",
-            len(sources),
-            help="Servidores PostgreSQL configurados em config/monitor.yaml",
+        # Situação em uma frase, em vez de uma fileira de números soltos.
+        st.html(
+            '<p class="sacla-resumo">'
+            f"Supervisionando <strong>{_plural(len(banks), 'banco', 'bancos')}</strong> em "
+            f"{_plural(len(sources), 'servidor', 'servidores')}. No período, "
+            f"{_plural(users, 'usuário teve', 'usuários tiveram')} atividade em "
+            f"{_plural(len(windows), 'janela', 'janelas')} de "
+            f"{int(state.window_ms(common.sacla_settings()) / 60_000)} minutos, e "
+            f"<strong>{_plural(pending, 'alerta aguarda', 'alertas aguardam')}</strong> "
+            "triagem.</p>"
         )
-        cols[1].metric("Bancos com atividade", len(banks))
-        cols[2].metric("Usuários ativos", windows["user"].nunique() if not windows.empty else 0)
-        cols[3].metric("Janelas analisadas", format_number(len(windows)))
-        cols[4].metric("Alertas novos", state.count_new(alerts))
-        st.caption(f"Período: {state.periods_label(periods, names, tz)}")
+        st.caption(f"{common.DISCLAIMER} Período: {state.periods_label(periods, names, tz)}.")
 
-        st.subheader("Fontes")
-        for row in sources.to_dict(orient="records"):
-            with st.container(border=True):
-                head, badge = st.columns([5, 1])
-                head.markdown(f"**{row['fonte']}**  \n`{row['logs']}`")
-                with badge:
+        st.subheader("Servidores supervisionados")
+        with st.container(border=True):
+            for i, row in enumerate(sources.to_dict(orient="records")):
+                if i:
+                    st.divider()
+                name, situation, coverage, model = st.columns([4, 2, 3, 3])
+                name.markdown(f"**{row['fonte']}**")
+                name.caption(f"Logs em `{row['logs']}`")
+                with situation:
                     common.source_status_badge(row["status"])
-                info = st.columns(4)
-                info[0].caption(f"Relógio: {row['relógio']}")
-                info[1].caption(f"Analisado até: {row['analisado até']}")
-                info[2].caption(f"Última análise: {row['última análise']}")
-                info[3].caption(f"Detector: {row['detector']} (limiar {row['limiar']})")
+                    st.caption(str(row["relógio"]))
+                if row["analisado até"] == "—":
+                    coverage.markdown("Ainda não analisado")
+                else:
+                    coverage.markdown(f"Analisado até {row['analisado até']}")
+                    coverage.caption(f"Última análise {row['última análise']}")
+                if row["detector"] == "—":
+                    model.markdown("Sem detector")
+                    model.caption("Ajuste em Bancos supervisionados")
+                else:
+                    model.markdown(row["detector legível"])
+                    model.caption(f"Limiar {row['limiar']}")
                 if row["último erro"]:
                     st.error(f"Último erro: {row['último erro']}", icon=":material/error:")
-                elif row["status"] == "aguardando ajuste":
-                    st.info(
-                        "Fonte sem detector: ajuste-o em **Bancos supervisionados**.",
-                        icon=":material/tune:",
-                    )
 
         if alerts.empty:
             st.success("Nenhum alerta no período.", icon=":material/check_circle:")
             return
-        left, right = st.columns([3, 2])
+        left, right = st.columns([3, 2], gap="large")
         with left:
-            st.subheader("Alertas ao longo do tempo, por banco")
+            st.subheader("Alertas por banco")
             over_time = state.alerts_over_time(alerts, settings.hourly_bins_max_days)
             hourly = state.hourly_bins(alerts, settings.hourly_bins_max_days)
             st.altair_chart(

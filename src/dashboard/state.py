@@ -28,13 +28,15 @@ STATUS_ICONS = {
     "suspeito confirmado": ":material/report:",
     "falso positivo": ":material/check_circle:",
 }
+# Cores com significado (tema em .streamlit/config.toml): âmbar = pede atenção; azul = em
+# andamento; vermelho = problema confirmado; cinza = encerrado sem problema.
 STATUS_COLORS = {
-    "novo": "red",
-    "em análise": "orange",
-    "suspeito confirmado": "violet",
-    "falso positivo": "green",
+    "novo": "orange",
+    "em análise": "blue",
+    "suspeito confirmado": "red",
+    "falso positivo": "gray",
 }
-SOURCE_STATUS_COLORS = {"ativo": "green", "aguardando ajuste": "orange", "erro": "red"}
+SOURCE_STATUS_COLORS = {"ativo": "green", "aguardando ajuste": "blue", "erro": "red"}
 # Períodos oferecidos nos filtros (rótulo -> extensão em ms; None = tudo).
 PERIODS: dict[str, int | None] = {
     "Último dia": MS_PER_DAY,
@@ -64,15 +66,16 @@ def window_ms(settings: SaclaSettings) -> int:
 
 
 def source_periods(store: Store, source_ids: list[str], preset: str) -> dict[str, Period]:
-    """Período de cada fonte, contado a partir da janela mais recente DELA.
+    """Período de cada fonte, contado a partir da janela mais recente DELA com atividade.
 
     Uma fonte ao vivo (relógio de hoje) e uma reprodução (relógio da simulação) têm "agoras"
-    diferentes; um período único esconderia uma das duas.
+    diferentes; um período único esconderia uma das duas. E a reprodução pode seguir depois
+    do fim do log: contar do relógio daria um período vazio.
     """
     span = PERIODS[preset]
     periods = {}
     for source_id in source_ids:
-        latest = store.state(source_id).last_window_end_ms
+        latest = store.latest_window_end(source_id)
         if span is None or latest is None:
             periods[source_id] = Period(None, None)
         else:
@@ -123,15 +126,31 @@ def sources_table(
             if source_state.last_window_end_ms is not None
             else "—"
         )
+        clock = clock_label(source, source_state.replay_started_at, now, timezone)
+        latest = store.latest_window_end(source.id)
+        pointer = source_state.last_window_end_ms
+        # O relógio da reprodução passou do fim do log reproduzido: a reprodução acabou.
+        finished = (
+            source.clock_mode != LIVE
+            and latest is not None
+            and pointer is not None
+            and pointer - latest > MS_PER_DAY
+        )
+        if finished and latest is not None:
+            clock = (
+                f"Reprodução concluída: o log vai até {display_time(local_stamp(latest, timezone))}"
+            )
+            coverage = display_time(local_stamp(latest, timezone))
         rows.append(
             {
                 "id": source.id,
                 "fonte": source.name,
-                "relógio": clock_label(source, source_state.replay_started_at, now, timezone),
+                "relógio": clock,
                 "status": source_state.status,
                 "analisado até": coverage,
                 "última análise": ago(source_state.last_scan_at, now),
                 "detector": info.get("modelo", "—"),
+                "detector legível": model_label(str(info.get("modelo", ""))),
                 "histórico do detector": info.get("historico", "—"),
                 "limiar": format_decimal(float(info["limiar"]), 4) if "limiar" in info else "—",
                 "último erro": source_state.last_error or "",
@@ -141,18 +160,25 @@ def sources_table(
     return pd.DataFrame(rows)
 
 
+def model_label(slug: str) -> str:
+    """'ne200-ms1024-mf0.5-log1' -> 'Isolation Forest, 200 árvores' (o resto fica no detalhe)."""
+    for part in slug.split("-"):
+        if part.startswith("ne") and part[2:].isdigit():
+            return f"Isolation Forest, {part[2:]} árvores"
+    return "Isolation Forest" if slug else "—"
+
+
 def clock_label(
     source: SourceConfig, replay_started_at: float | None, now: float, timezone: str
 ) -> str:
+    """Frase completa sobre o relógio da fonte (é mostrada sozinha, sem rótulo antes)."""
     if source.clock_mode == LIVE:
-        return "ao vivo"
+        return "Relógio ao vivo"
+    speed = format_number(source.replay_speed)
     if replay_started_at is None:
-        return f"reprodução ×{format_number(source.replay_speed)} (não iniciada)"
+        return f"Reprodução a {speed}×, ainda não iniciada"
     current = clock_ms(source, replay_started_at, now)
-    return (
-        f"reprodução ×{format_number(source.replay_speed)} — "
-        f"{display_time(local_stamp(current, timezone))}"
-    )
+    return f"Reprodução a {speed}×, em {display_time(local_stamp(current, timezone))}"
 
 
 def ago(timestamp: float | None, now: float) -> str:
@@ -164,6 +190,15 @@ def ago(timestamp: float | None, now: float) -> str:
     if seconds < 3600:
         return f"há {seconds // 60} min"
     return f"há {seconds // 3600} h"
+
+
+def known_databases(store: Store) -> list[str]:
+    """Todos os bancos já vistos pelo monitor, em qualquer fonte."""
+    counts = store.counts()
+    if counts.empty:
+        return []
+    found = {b for v in counts["dbs"] for b in databases_of(v)}
+    return sorted(found - {NO_DATABASE})
 
 
 def databases_table(store: Store, monitor: MonitorSettings) -> pd.DataFrame:
