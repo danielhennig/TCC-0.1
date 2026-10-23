@@ -54,11 +54,14 @@ class FeatureSettings:
     weekend_days: frozenset[int]
     hour_smoothing: float
     robust_scale_floor: float
+    training_history: str  # in_sample | leave_one_day_out (docs/decisoes.md, D45)
 
     def __post_init__(self) -> None:
         # Também roda em dataclasses.replace (ex.: --window na linha de comando).
         if self.window_minutes <= 0:
             raise ConfigError("features.window_minutes deve ser positivo")
+        if self.training_history not in ("in_sample", "leave_one_day_out"):
+            raise ConfigError("features.training_history deve ser in_sample ou leave_one_day_out")
         if self.hour_smoothing <= 0 or self.robust_scale_floor <= 0:
             raise ConfigError("features.hour_smoothing e robust_scale_floor devem ser positivos")
 
@@ -136,6 +139,7 @@ def load_settings(path: Path | None = None) -> SaclaSettings:
                 weekend_days=frozenset(int(d) for d in features["weekend_days"]),
                 hour_smoothing=float(features["hour_smoothing"]),
                 robust_scale_floor=float(features["robust_scale_floor"]),
+                training_history=str(features["training_history"]),
             ),
             detector=DetectorSettings(
                 log1p_features=tuple(str(f) for f in detector["log1p_features"]),

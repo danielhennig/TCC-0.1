@@ -1,0 +1,43 @@
+{
+  "semente": 0,
+  "janelas_sinalizadas": 295,
+  "episodios": 195,
+  "episodios_com_cenario": 125,
+  "episodios_sem_cenario": 70,
+  "falsos_positivos_por_usuario": {
+    "svc_locadora": 24,
+    "atendente_02": 15,
+    "svc_batch": 8,
+    "analista_02": 8,
+    "analista_01": 7,
+    "atendente_01": 7,
+    "gerente_02": 4,
+    "gerente_01": 4,
+    "atendente_04": 3,
+    "atendente_03": 2
+  },
+  "relatorio_s": 0.588,
+  "arquivos": {
+    "alertas": "results/experimentos/sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1/relatorio/alertas.csv",
+    "episodios": "results/experimentos/sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1/relatorio/episodios.csv",
+    "usuarios": "results/experimentos/sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1/relatorio/usuarios.csv",
+    "html": "results/experimentos/sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1/relatorio/relatorio.html"
+  },
+  "uso_real": {
+    "parametros_escolhidos": {
+      "n_estimators": 200,
+      "max_samples": 1024,
+      "max_features": 0.5,
+      "log1p": true
+    },
+    "parametros_sacla_yaml": {
+      "n_estimators": 200,
+      "max_samples": 1024,
+      "max_features": 0.5,
+      "log1p": true
+    },
+    "taxa_alertas_treino_equivalente": 0.0213,
+    "taxa_alertas_sacla_yaml": 0.0213,
+    "coerente": true
+  }
+}

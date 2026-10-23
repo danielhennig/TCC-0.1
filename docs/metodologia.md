@@ -119,6 +119,14 @@ Os atributos relativos usam só o histórico do próprio usuário no período de
 informação de validação ou teste é usada nesse cálculo, o que é verificado por teste
 automatizado.
 
+As janelas do próprio treino são comparadas com o histórico do usuário **sem o seu dia**
+("deixando um dia de fora", D45). Assim, treino e teste têm atributos relativos da mesma
+natureza: uma tabela que o usuário só leu num dia do treino conta como inédita naquele dia.
+
+Na primeira avaliação (v1), o treino era comparado com o histórico inteiro, que incluía a
+própria janela. As frações de novidade valiam sempre 0 no treino e o Isolation Forest não as
+usava (D41). A seção 9.6 compara as duas versões.
+
 ## 7. Rotulagem e divisão temporal
 
 - **Rótulo** (D30): uma janela `[t, t+5 min)` do usuário *u* é anômala se algum cenário do
@@ -142,10 +150,14 @@ rótulos, com todas as janelas do treino.
   (`n_estimators` ∈ {100, 200, 500}, `max_samples` ∈ {256, 1024, 10%}, `max_features` ∈
   {0,5; 0,75; 1,0}, `log(1+x)` nas contagens sim/não), cada uma com 5 sementes. Para cada
   combinação, o limiar de melhor F1. Escolha: maior F1 médio, com desempate por PR-AUC.
-- **Escolhida:** 500 árvores, 1.024 amostras por árvore, 50% dos atributos por árvore e
-  `log(1+x)`. F1 de 57,0% na validação.
-- **Teste, usado uma única vez:** a configuração escolhida, com 10 sementes do modelo e o
-  limiar de cada semente vindo da validação. Reporta-se média ± desvio.
+- **Escolhida:** 200 árvores, 1.024 amostras por árvore, 50% dos atributos por árvore e
+  `log(1+x)`. F1 de 61,0% na validação.
+- **Teste:** a configuração escolhida, com 10 sementes do modelo e o limiar de cada semente
+  vindo da validação. Reporta-se média ± desvio.
+- **Uso do teste:** usado uma vez na v1 e uma segunda vez na v2, depois da correção estrutural
+  da D45. A correção foi motivada por uma análise sem rótulos (atributo constante no treino),
+  não pelo desempenho, e o protocolo da v2 é idêntico. As duas versões são reportadas
+  (seção 9.6).
 
 **Comparações:**
 - **IF sem rótulos:** padrões do scikit-learn e limiar no quantil 99% dos scores do próprio
@@ -176,52 +188,53 @@ rótulos, com todas as janelas do treino.
 
 | Detector | Precisão | Recall | F1 | Falsos positivos | Cenários detectados | ROC-AUC | PR-AUC |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| IF ajustado | 74,5 ± 1,9 | 55,8 ± 2,1 | 63,8 ± 1,1 | 65 | 69,8 ± 2,3 | 0,939 | 0,644 |
-| IF sem rótulos | 64,7 ± 2,6 | 24,7 ± 2,3 | 35,8 ± 2,7 | 45 | 33,8 ± 3,3 | 0,902 | 0,456 |
+| IF ajustado | 76,5 ± 3,7 | 61,7 ± 4,3 | 68,1 ± 2,0 | 65 | 75,5 ± 4,7 | 0,953 | 0,700 |
+| IF sem rótulos | 69,2 ± 2,3 | 27,5 ± 2,1 | 39,3 ± 2,3 | 41 | 36,3 ± 3,6 | 0,918 | 0,507 |
 | Regras | 96,7 | 68,5 | 80,2 | 8 | 73,1 | — | — |
-| IF ∪ regras | 80,0 ± 1,9 | 78,5 ± 0,9 | 79,2 ± 0,9 | 66 | 84,7 ± 1,1 | — | — |
+| IF ∪ regras | 80,2 ± 3,8 | 79,3 ± 1,1 | 79,7 ± 1,3 | 67 | 86,2 ± 1,3 | — | — |
 
-Valores em %; média ± desvio nas 10 sementes do modelo. A prevalência no teste é 7,2%, que é o
-PR-AUC de um detector aleatório.
+Valores em %; média ± desvio nas 10 sementes do modelo (v2). A prevalência no teste é 7,2%, que
+é o PR-AUC de um detector aleatório.
 
 ### 9.2 Por tipo e intensidade (figuras `deteccao_tipo_intensidade` e `scores_por_tipo`)
 
 - O IF detecta bem o que é volumoso ou fora da rotina:
-  - fora do horário: 80–100% dos cenários;
-  - rajada média e alta: 88–90%;
-  - volume alto médio e alto: 99–100%;
+  - fora do horário: 91–100% dos cenários;
+  - rajada média e alta: 82,5–87,5%;
+  - volume alto médio e alto: 94–100%;
   - sem permissão médio e alto: 100%.
 - As intensidades baixas, desenhadas na faixa do ruído normal, são as mais difíceis. A rajada
-  baixa (3× a taxa) não é detectada por nenhum detector.
+  baixa (3× a taxa) quase não é detectada por nenhum detector (IF 5%, regras 0%).
 - **Tipo inédito:**
-  - o IF detecta 25–55% dos cenários conforme a intensidade, e a união IF ∪ regras chega a
-    50–75%;
-  - os três cenários dos analistas são detectados só pelo IF;
-  - os do serviço de aplicação não são detectados por ninguém, porque a paginação lenta se
-    mistura ao tráfego normal do serviço.
+  - o IF detecta 37,5% (baixa), 40% (média) e 87,5% (alta) dos cenários, e a união IF ∪ regras
+    chega a 50–92,5%;
+  - os três cenários dos analistas e um do serviço de aplicação são detectados só pelo IF;
+  - dois cenários de atendentes e dois do serviço não são detectados por ninguém: a paginação
+    lenta se mistura ao tráfego normal desses usuários.
 
 ### 9.3 IF e regras (figura `cenarios_if_regras`)
 
 As regras vencem o IF sozinho. A união, porém:
-- eleva o recall de 68,5% para 78,5%;
-- eleva os cenários detectados de 73,1% para 84,7%.
+- eleva o recall de 68,5% para 79,3%;
+- eleva os cenários detectados de 73,1% para 86,2%.
 
-Os cenários que só o IF detecta concentram-se em rajadas (8), acessos fora do horário (4) e no
-tipo inédito (3). Os que só as regras detectam concentram-se em DML incomum, falhas de
-autenticação e erros de permissão: tipos em que um único evento já é sinal forte e uma regra
-de limiar fixo o captura sem custo.
+Os cenários que só o IF detecta concentram-se em rajadas (8), acessos fora do horário (4),
+volume alto (4) e no tipo inédito (4). Os que só as regras detectam concentram-se em falhas de
+autenticação (6), DML incomum (4) e erros de permissão (4): tipos em que um único evento já é
+sinal forte e uma regra de limiar fixo o captura sem custo.
 
 ### 9.4 Sensibilidade e robustez (figuras `sensibilidade_*` e `robustez_simulacoes`)
 
-- O resultado é estável quanto ao número de árvores e à fração de atributos.
+- O resultado é estável quanto ao número de árvores (100, 200 e 500 empatam dentro do
+  desvio) e à fração de atributos.
 - Os parâmetros que importam:
-  - `max_samples` = 256 reduz o F1 de validação de 57,0% para 45,3%;
-  - não aplicar `log(1+x)` reduz o F1 para 51,9%.
-- **Janela de 1 min:** detecta mais cenários (79,6% contra 65,6% na validação), com o dobro de
-  alertas.
-- **Janela de 15 min:** tem F1 por janela maior (62,2%), mas detecta menos cenários. O F1 por
-  janela não é comparável entre tamanhos.
-- **Robustez:** nas três simulações, o F1 do IF foi 62,4 ± 1,2 e o das regras 78,8 ± 4,2. O
+  - `max_samples` = 256 reduz o F1 de validação de 61,0% para 47,6%;
+  - não aplicar `log(1+x)` reduz o F1 para 56,7%.
+- **Janela de 1 min:** detecta mais cenários (82,0% contra 70,2% na validação), com mais que o
+  dobro de alertas (422 contra 191).
+- **Janela de 15 min:** tem F1 por janela maior (68,8%), mas detecta menos cenários (67,8%). O
+  F1 por janela não é comparável entre tamanhos.
+- **Robustez:** nas três simulações, o F1 do IF foi 67,2 ± 1,6 e o das regras 78,8 ± 4,2. O
   resultado do IF depende pouco da simulação.
 
 ### 9.5 Custo (figura `tempos_etapas`)
@@ -231,10 +244,28 @@ Quatro semanas de log (207.769 linhas) são processadas em cerca de 10 s:
 | Etapa | Tempo |
 |---|---:|
 | Leitura e eventos | 5,7 s |
-| Agregação | 3,2 s |
-| Treino | 0,43 s |
-| Score do teste | 0,09 s |
-| Relatório com explicações | 0,65 s |
+| Agregação (com o histórico "dia de fora" no treino) | 3,5 s |
+| Treino | 0,17 s |
+| Score do teste | 0,04 s |
+| Relatório com explicações | 0,6 s |
+
+### 9.6 Primeira avaliação (v1) × avaliação corrigida (v2)
+
+Na v1, os atributos relativos das janelas de treino eram calculados contra um histórico que
+incluía a própria janela. As frações de novidade valiam sempre 0 no treino e o Isolation Forest
+não as usava (D41). A v2 corrige isso (D45) e repete o mesmo protocolo (D46).
+
+| Detector | F1 v1 | F1 v2 | Cenários v1 | Cenários v2 |
+|---|---:|---:|---:|---:|
+| IF ajustado | 63,8 | 68,1 | 69,8 | 75,5 |
+| IF sem rótulos | 35,8 | 39,3 | 33,8 | 36,3 |
+| Regras | 80,2 | 80,2 | 73,1 | 73,1 |
+| IF ∪ regras | 79,2 | 79,7 | 84,7 | 86,2 |
+
+- A melhora do IF aparece também nas outras duas simulações: F1 62,4 ± 1,2 → 67,2 ± 1,6.
+- O maior ganho é no tipo inédito: na intensidade alta, 55% → 87,5% dos cenários.
+- As regras não mudam, porque só usam atributos absolutos.
+- A v1 está arquivada em `results/historico/v1-historico-na-amostra/`.
 
 ## 10. Relatório e uso real
 
@@ -244,8 +275,11 @@ Para cada janela sinalizada, o relatório (CSV e HTML) mostra:
 - os atributos mais raros para aquele usuário, em linguagem direta. Exemplo: "linhas
   retornadas (soma): 112.507 (acima do máximo do histórico; mediana 61, máximo 10.072)".
 
-Janelas seguidas do mesmo usuário formam episódios (D42, D43). No teste foram 233 janelas
-sinalizadas em 158 episódios, 111 deles com ao menos um cenário injetado.
+Janelas seguidas do mesmo usuário formam episódios (D42, D43). No teste (semente 0) foram
+295 janelas sinalizadas em 195 episódios, 125 deles com ao menos um cenário injetado. Os seis
+episódios de maior score são a rotina noturna legítima do serviço batch, que lê mais a cada
+semana porque as tabelas crescem. A explicação mostra isso, e o analista descarta esses alertas
+rapidamente (deriva de dados, D43).
 
 Os comandos `sacla fit` e `sacla score` aplicam o mesmo fluxo a qualquer jsonlog, sem
 rótulos. O limiar é definido como a fração de alertas aceita num período normal (D39, D40).
@@ -263,9 +297,13 @@ avaliado.
   inédito e a análise por tipo mitigam, mas não eliminam, esse viés.
 - **Horários sintéticos e execução sequencial.** Não há concorrência real. As durações são
   reais, mas medidas sem contenção (D13).
-- **Atributos de novidade inativos no modelo** (D41). Com o histórico calculado sobre o
-  próprio treino, as frações de tabelas, IPs e formatos de consulta inéditos valem 0 em todo o
-  treino, e o Isolation Forest não as usa.
+- **Correção depois de ver o teste.** A v2 corrige um defeito estrutural da v1 (D41, D45)
+  e por isso usa o teste uma segunda vez. O defeito foi achado sem olhar desempenho e o
+  protocolo não mudou, mas a v2 deve ser lida como uma versão corrigida, com a v1 reportada ao
+  lado.
+- **Novidade de tabelas com pouco peso.** Mesmo na v2, só 2 janelas do treino têm tabela
+  inédita (fora do dia), então esse atributo pesa pouco no modelo; IPs e formatos de consulta
+  inéditos pesam mais.
 - **Saturação do score.** O Isolation Forest não distingue um valor "um pouco acima" do máximo
   do treino de um valor "100× acima" (D41).
 - **Contaminação e deriva.** Anomalias no treino elevam o "máximo do usuário" e mascaram
@@ -294,7 +332,7 @@ python tasks.py setup        # imagens, banco e Pagila do zero
 python tasks.py simulate     # 28 dias, semente 42 (~2,5 min)
 python tasks.py features     # conjunto rotulado (janela de 5 min)
 python tasks.py evaluate     # ajuste, teste, regras, sensibilidade (~5 min)
-python tasks.py robustness --exp-id sim-s42-28d__w5m__ne500-ms1024-mf0.5-log1
+python tasks.py robustness --exp-id sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1
 python tasks.py report       # relatório do teste e figuras
 ```
 

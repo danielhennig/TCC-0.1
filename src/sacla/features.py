@@ -12,6 +12,12 @@ Atributos relativos ao histórico do próprio usuário: calculados SÓ com janel
 - z robusto (mediana e MAD) do número de comandos e de log(1 + linhas retornadas);
 - surpresa da hora (-log da frequência suavizada daquela hora no histórico do usuário);
 - frações de tabelas, IPs e formatos de consulta (query_id) nunca vistos no histórico.
+
+Janelas do próprio histórico (o treino), com `features.training_history: leave_one_day_out`:
+cada uma é comparada com o histórico do usuário SEM o seu dia (local). Comparadas com o
+histórico inteiro, as frações de novidade dariam sempre 0 no treino, e o Isolation Forest
+nunca cortaria nesses atributos (docs/decisoes.md, D41 e D45). Assim o treino tem a mesma
+natureza "fora da amostra" das janelas que serão pontuadas depois.
 """
 
 from __future__ import annotations
@@ -29,6 +35,9 @@ from sacla.events import AUTH_FAILURE, CONNECTION, QUERY, QUERY_ERROR, command_m
 from sacla.sqlclass import DDL, DELETE, INSERT, OTHER, SELECT, UPDATE
 
 MS_PER_MIN = 60_000
+IN_SAMPLE = "in_sample"
+LEAVE_ONE_DAY_OUT = "leave_one_day_out"
+TRAINING_HISTORY_MODES = (IN_SAMPLE, LEAVE_ONE_DAY_OUT)
 MAD_TO_SIGMA = 1.4826  # MAD -> desvio-padrão sob normalidade
 T = TypeVar("T")
 
@@ -183,26 +192,30 @@ def fit_baselines(
     # A janela inteira precisa estar no histórico: uma janela que atravessa o fim do treino
     # traria eventos do período seguinte.
     history = windows[windows["window_end_ms"] <= history_end_ms]
+    return {
+        str(user): _baseline(frame, settings) for user, frame in history.groupby("user", sort=True)
+    }
+
+
+def _baseline(frame: pd.DataFrame, settings: SaclaSettings) -> UserBaseline:
+    """Histórico de um usuário a partir das suas janelas."""
     alpha = settings.features.hour_smoothing
     floor = settings.features.robust_scale_floor
-    baselines = {}
-    for user, frame in history.groupby("user", sort=True):
-        commands = frame["n_commands"].to_numpy(dtype=float)
-        rows = np.log1p(frame["rows_returned_sum"].to_numpy(dtype=float))
-        hours = np.bincount(frame["local_hour"].to_numpy(dtype=int), minlength=24)
-        total = hours.sum() + 24 * alpha
-        baselines[str(user)] = UserBaseline(
-            windows=len(frame),
-            commands_median=float(np.median(commands)),
-            commands_scale=_robust_scale(commands, floor),
-            rows_median=float(np.median(rows)),
-            rows_scale=_robust_scale(rows, floor),
-            hour_log_prob=tuple(math.log((h + alpha) / total) for h in hours),
-            tables=_union(frame["tables_set"]),
-            ips=_union(frame["ips_set"]),
-            query_ids=_union(frame["query_ids_set"]),
-        )
-    return baselines
+    commands = frame["n_commands"].to_numpy(dtype=float)
+    rows = np.log1p(frame["rows_returned_sum"].to_numpy(dtype=float))
+    hours = np.bincount(frame["local_hour"].to_numpy(dtype=int), minlength=24)
+    total = hours.sum() + 24 * alpha
+    return UserBaseline(
+        windows=len(frame),
+        commands_median=float(np.median(commands)),
+        commands_scale=_robust_scale(commands, floor),
+        rows_median=float(np.median(rows)),
+        rows_scale=_robust_scale(rows, floor),
+        hour_log_prob=tuple(math.log((h + alpha) / total) for h in hours),
+        tables=_union(frame["tables_set"]),
+        ips=_union(frame["ips_set"]),
+        query_ids=_union(frame["query_ids_set"]),
+    )
 
 
 def add_relative_features(
@@ -244,10 +257,37 @@ def add_relative_features(
 def build_features(
     events: pd.DataFrame, settings: SaclaSettings, history_end_ms: int
 ) -> tuple[pd.DataFrame, dict[str, UserBaseline]]:
-    """Janelas com todos os atributos (FEATURE_COLUMNS) e os históricos usados."""
+    """Janelas com todos os atributos (FEATURE_COLUMNS) e os históricos usados.
+
+    Os históricos devolvidos são os do período inteiro (usados nas janelas posteriores e no
+    uso real); as janelas do próprio histórico seguem `features.training_history`.
+    """
     windows = aggregate_windows(events, settings)
     baselines = fit_baselines(windows, settings, history_end_ms)
-    return _finish(add_relative_features(windows, baselines, settings)), baselines
+    features = add_relative_features(windows, baselines, settings)
+    if settings.features.training_history == LEAVE_ONE_DAY_OUT:
+        in_history = (windows["window_end_ms"] <= history_end_ms).to_numpy()
+        if in_history.any():
+            own = out_of_day_relative(windows[in_history], settings)
+            columns = list(RELATIVE_FEATURES)
+            features.loc[in_history, columns] = own.loc[windows.index[in_history], columns]
+    return _finish(features), baselines
+
+
+def out_of_day_relative(history: pd.DataFrame, settings: SaclaSettings) -> pd.DataFrame:
+    """Atributos relativos de cada janela do histórico contra os OUTROS dias do usuário.
+
+    O dia é a data local do início da janela. Um usuário com histórico de um dia só fica, nesse
+    dia, sem referência (tratado como usuário sem histórico).
+    """
+    parts = []
+    for user, frame in history.groupby("user", sort=True):
+        days = frame["window_start_local"].str[:10]
+        for day in days.unique():
+            others = frame[days != day]
+            baselines = {str(user): _baseline(others, settings)} if len(others) else {}
+            parts.append(add_relative_features(frame[days == day], baselines, settings))
+    return pd.concat(parts).loc[history.index]
 
 
 def features_with_baselines(

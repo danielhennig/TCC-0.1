@@ -1,5 +1,8 @@
 {
   "run_id": "sim-s42-28d",
+  "run_fingerprint": "991a82d41bfc4b1e68d77ac8a063408d3a10c48ec43ec93ec7e4f5eb5a365008",
+  "settings_fingerprint": "f1770322dd17318a4ccc36ca35ad451a62f0326b3c622001abe1bd06fcd30aee",
+  "training_history": "leave_one_day_out",
   "window_minutes": 15,
   "history_end_utc": "2026-03-16T03:00:00.000+00:00",
   "features": [
@@ -34,41 +37,41 @@
   ],
   "read": {
     "files": 29,
-    "records": 207177,
+    "records": 207769,
     "malformed": 0,
     "truncated": 0,
     "unknown_zone": 0
   },
   "parse": {
-    "events": 110410,
+    "events": 110738,
     "unpaired_plans": 0,
     "unparseable_plans": 0,
     "ignored_lines": 2829
   },
-  "events": 110410,
+  "events": 110738,
   "events_by_kind": {
-    "query": 107134,
+    "query": 107458,
     "connection": 1048,
     "disconnection": 1048,
     "auth_failure": 733,
-    "query_error": 447
+    "query_error": 451
   },
   "users_with_history": 10,
   "windows_by_split": {
     "train": {
-      "windows": 3787,
-      "anomalous": 26,
-      "contamination_pct": 0.69
+      "windows": 3785,
+      "anomalous": 25,
+      "contamination_pct": 0.66
     },
     "validation": {
-      "windows": 1963,
-      "anomalous": 123,
-      "contamination_pct": 6.27
+      "windows": 1968,
+      "anomalous": 124,
+      "contamination_pct": 6.3
     },
     "test": {
-      "windows": 1971,
-      "anomalous": 216,
-      "contamination_pct": 10.96
+      "windows": 1970,
+      "anomalous": 217,
+      "contamination_pct": 11.02
     }
   },
   "anomalous_windows_by_type": {
@@ -78,29 +81,29 @@
       "validation": 15
     },
     "falha_auth": {
-      "test": 31,
-      "train": 5,
-      "validation": 21
+      "test": 34,
+      "train": 4,
+      "validation": 16
     },
     "fora_horario": {
-      "test": 58,
+      "test": 54,
       "train": 3,
-      "validation": 34
+      "validation": 36
     },
     "leitura_atipica": {
-      "test": 21,
+      "test": 24,
       "train": 0,
       "validation": 0
     },
     "rajada": {
-      "test": 28,
+      "test": 31,
       "train": 8,
-      "validation": 20
+      "validation": 19
     },
     "sem_permissao": {
-      "test": 30,
+      "test": 26,
       "train": 5,
-      "validation": 18
+      "validation": 23
     },
     "volume_alto": {
       "test": 24,
@@ -111,25 +114,25 @@
   "crosscheck": {
     "totals": {
       "executor": {
-        "comandos": 107581,
-        "comandos_com_erro": 447,
+        "comandos": 107909,
+        "comandos_com_erro": 451,
         "falhas_de_login": 733,
         "conexoes": 1048,
-        "linhas": 2744038
+        "linhas": 2743519
       },
       "sacla": {
-        "comandos": 107581,
-        "comandos_com_erro": 447,
+        "comandos": 107909,
+        "comandos_com_erro": 451,
         "falhas_de_login": 733,
         "conexoes": 1048,
-        "linhas": 2744038
+        "linhas": 2743519
       }
     },
     "differences": [],
     "passed": true
   },
   "timings_s": {
-    "leitura_e_eventos_s": 5.73,
-    "agregacao_s": 1.39
+    "leitura_e_eventos_s": 5.69,
+    "agregacao_s": 1.79
   }
 }

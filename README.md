@@ -26,14 +26,18 @@ decisões técnicas, com fontes e evidências, em [docs/decisoes.md](docs/deciso
 
 | Detector | Precisão | Recall | F1 | Cenários detectados |
 |---|---:|---:|---:|---:|
-| Isolation Forest (ajustado na validação) | 74,5 | 55,8 | 63,8 | 69,8 |
-| Isolation Forest (sem rótulos) | 64,7 | 24,7 | 35,8 | 33,8 |
+| Isolation Forest (ajustado na validação) | 76,5 | 61,7 | 68,1 | 75,5 |
+| Isolation Forest (sem rótulos) | 69,2 | 27,5 | 39,3 | 36,3 |
 | Regras de especialista | 96,7 | 68,5 | 80,2 | 73,1 |
-| Isolation Forest ∪ regras | 80,0 | 78,5 | 79,2 | 84,7 |
+| Isolation Forest ∪ regras | 80,2 | 79,3 | 79,7 | 86,2 |
 
-Valores em %, média de 10 sementes do modelo. Nas três simulações (sementes 42, 7 e 2026), o
-F1 do Isolation Forest foi 62,4 ± 1,2. Interpretação, limitações e ameaças à validade: seções
-9 e 11 da metodologia.
+Valores em %, média de 10 sementes do modelo, avaliação corrigida (v2). Nas três simulações
+(sementes 42, 7 e 2026), o F1 do Isolation Forest foi 67,2 ± 1,6.
+
+A primeira avaliação (v1) calculava os atributos relativos do treino contra um histórico que
+incluía a própria janela, o que anulava os atributos de novidade (D41). Ela está arquivada em
+`results/historico/` e comparada com a v2 na seção 9.6 da metodologia (F1 do IF: 63,8 → 68,1).
+Interpretação, limitações e ameaças à validade: seções 9 e 11 da metodologia.
 
 ## Pré-requisitos
 
@@ -49,7 +53,7 @@ python tasks.py bench        # mede o custo do registro de comandos e do auto_ex
 python tasks.py simulate     # 28 dias simulados, semente 42 (~2,5 min)
 python tasks.py features     # janelas de 5 min com atributos e rótulos (--window N)
 python tasks.py evaluate     # ajuste na validação, teste único, regras, sensibilidade (~5 min)
-python tasks.py robustness --exp-id sim-s42-28d__w5m__ne500-ms1024-mf0.5-log1
+python tasks.py robustness --exp-id sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1
 python tasks.py report       # relatório de anomalias do teste e figuras
 python tasks.py test         # testes (pytest)
 python tasks.py lint         # ruff + mypy
@@ -78,7 +82,7 @@ python tasks.py score --logs /logs --since 2026-03-23T03:00:00Z --model data/sac
 - `/logs` é o volume de logs do banco, visto de dentro do container. Também serve uma pasta do
   projeto, como `data/runs/sim-s42-28d/retimed`.
 - Datas em ISO 8601 com fuso; o intervalo é `[--since, --until)`.
-- O limiar é definido sem rótulos: por padrão, 1,44% das janelas do histórico ficam acima dele
+- O limiar é definido sem rótulos: por padrão, 2,13% das janelas do histórico ficam acima dele
   (`detector.train_alert_rate` em `config/sacla.yaml`, ou `--alert-rate` no `fit`).
 
 O relatório (`relatorio.html`, `alertas.csv`, `episodios.csv`, `usuarios.csv`) lista os
@@ -99,6 +103,7 @@ aquele usuário, por exemplo:
 | `results/dataset/<run_id>/` | resumo do conjunto rotulado e conferência com o executor | sim |
 | `results/experimentos/<exp_id>/` | métricas, tabelas, scores, `resumo.md`, `relatorio/` e `figuras/` | sim |
 | `results/robustez/<exp_id>/` | o mesmo experimento em outras simulações | sim |
+| `results/historico/` | primeira avaliação (v1), guardada para comparação | sim |
 
 As figuras (PNG 300 dpi e PDF) e as legendas sugeridas (`figuras/legendas.md`) estão prontas
 para a monografia.
@@ -125,8 +130,8 @@ existem só no manifesto e na avaliação.
 - Tráfego sintético, regular e desenhado pelo mesmo autor das anomalias e das regras.
 - Horários simulados e execução sequencial, sem concorrência real.
 - `auto_explain` com análise: ~10% de latência e ~10 KB de log por comando.
-- Os atributos de novidade (tabelas, IPs e formatos de consulta inéditos) valem 0 em todo o
-  treino e não influenciam o Isolation Forest (D41). Eles aparecem só nas explicações.
+- A avaliação corrigida (v2) usou o conjunto de teste pela segunda vez, depois de corrigir
+  um defeito estrutural achado sem olhar desempenho (D41, D45). As duas versões são reportadas.
 - O score do Isolation Forest satura fora da faixa do treino: um valor 100× acima do máximo
   pontua como um pouco acima.
 - Sem atualização do histórico: o crescimento das tabelas faz a rotina batch legítima parecer

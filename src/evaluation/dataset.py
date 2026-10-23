@@ -34,6 +34,42 @@ def run_fingerprint(run_dir: Path) -> str:
     return digest.hexdigest()
 
 
+def with_window(settings: SaclaSettings, window_minutes: int | None) -> SaclaSettings:
+    if window_minutes is None:
+        return settings
+    return replace(settings, features=replace(settings.features, window_minutes=window_minutes))
+
+
+def settings_fingerprint(settings: SaclaSettings) -> str:
+    """Impressão digital da configuração que muda o conjunto (leitura, eventos e atributos).
+
+    Junto com `run_fingerprint`, decide se um conjunto já montado pode ser reaproveitado.
+    """
+    reader, events, features = settings.reader, settings.events, settings.features
+    canonical = {
+        "reader": {
+            "patterns": list(reader.patterns),
+            "zone_offsets_min": sorted(reader.zone_offsets_min.items()),
+        },
+        "events": {
+            "client_backend_types": sorted(events.client_backend_types),
+            "ignore_users": sorted(events.ignore_users),
+            "partition_aliases": [(p.pattern, table) for p, table in events.partition_aliases],
+            "auth_failure_states": sorted(events.auth_failure_states),
+            "permission_denied_states": sorted(events.permission_denied_states),
+        },
+        "features": {
+            "window_minutes": features.window_minutes,
+            "timezone": features.timezone,
+            "weekend_days": sorted(features.weekend_days),
+            "hour_smoothing": features.hour_smoothing,
+            "robust_scale_floor": features.robust_scale_floor,
+            "training_history": features.training_history,
+        },
+    }
+    return hashlib.sha256(json.dumps(canonical, sort_keys=True).encode()).hexdigest()
+
+
 def dataset_name(window_minutes: int) -> str:
     return f"w{window_minutes}m"
 
@@ -41,10 +77,7 @@ def dataset_name(window_minutes: int) -> str:
 def build_dataset(
     run_dir: Path, out_dir: Path, settings: SaclaSettings, window_minutes: int | None = None
 ) -> dict[str, Any]:
-    if window_minutes is not None:
-        settings = replace(
-            settings, features=replace(settings.features, window_minutes=window_minutes)
-        )
+    settings = with_window(settings, window_minutes)
     window = settings.features.window_minutes
     run = json.loads((run_dir / "run.json").read_text(encoding="utf-8"))
     if run["timezone"] != settings.features.timezone:
@@ -77,6 +110,8 @@ def build_dataset(
     summary = {
         "run_id": run["run_id"],
         "run_fingerprint": run_fingerprint(run_dir),
+        "settings_fingerprint": settings_fingerprint(settings),
+        "training_history": settings.features.training_history,
         "window_minutes": window,
         "history_end_utc": run["splits"]["train"]["end_utc"],
         "features": list(FEATURE_COLUMNS),

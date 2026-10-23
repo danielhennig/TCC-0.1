@@ -26,7 +26,13 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from evaluation.dataset import build_dataset, dataset_name, run_fingerprint
+from evaluation.dataset import (
+    build_dataset,
+    dataset_name,
+    run_fingerprint,
+    settings_fingerprint,
+    with_window,
+)
 from evaluation.metrics import (
     best_f1_threshold,
     binary_metrics,
@@ -76,18 +82,24 @@ def load_split(
     settings: SaclaSettings,
     window: int,
 ) -> tuple[pd.DataFrame, dict[str, Any]]:
-    """Conjunto rotulado da janela pedida; monta-o se ainda não existir."""
+    """Conjunto rotulado da janela pedida; monta-o se faltar ou se estiver desatualizado.
+
+    Desatualizado: de outra execução da simulação ou de outra configuração de leitura e
+    atributos (ex.: features.training_history).
+    """
     name = dataset_name(window)
     path = features_dir / f"{name}.parquet"
     summary_path = features_dir / f"{name}_summary.json"
-    current = run_fingerprint(run_dir)
-    stale = (
-        not path.exists()
-        or not summary_path.exists()
-        or json.loads(summary_path.read_text(encoding="utf-8")).get("run_fingerprint") != current
-    )
+    expected = {
+        "run_fingerprint": run_fingerprint(run_dir),
+        "settings_fingerprint": settings_fingerprint(with_window(settings, window)),
+    }
+    stale = not path.exists() or not summary_path.exists()
+    if not stale:
+        saved = json.loads(summary_path.read_text(encoding="utf-8"))
+        stale = any(saved.get(key) != value for key, value in expected.items())
     if stale:
-        log.info("conjunto %s ausente ou de outra execução da simulação; montando", name)
+        log.info("conjunto %s ausente ou desatualizado; montando", name)
         build_dataset(run_dir, features_dir, settings, window)
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     return pd.read_parquet(path), summary

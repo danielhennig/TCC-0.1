@@ -1,6 +1,8 @@
 {
   "run_id": "sim-s2026-28d",
   "run_fingerprint": "c103916dcb21076de07e2b9ce180d07c665ded0f6e29fbf34f4cefcb27deeccc",
+  "settings_fingerprint": "eff428518595dfeebf567f13d166bcd1ca213d8fc0bce4dffae91e5a0a20b32b",
+  "training_history": "leave_one_day_out",
   "window_minutes": 5,
   "history_end_utc": "2026-03-16T03:00:00.000+00:00",
   "features": [
@@ -130,7 +132,7 @@
     "passed": true
   },
   "timings_s": {
-    "leitura_e_eventos_s": 5.5,
-    "agregacao_s": 2.83
+    "leitura_e_eventos_s": 5.71,
+    "agregacao_s": 3.41
   }
 }

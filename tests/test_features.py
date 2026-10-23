@@ -170,6 +170,45 @@ def test_user_without_history_gets_neutral_reference() -> None:
     assert row.new_tables_frac == 1.0 and row.hour_surprisal == pytest.approx(math.log(24))
 
 
+IN_SAMPLE = replace(SETTINGS, features=replace(SETTINGS.features, training_history="in_sample"))
+LODO = replace(SETTINGS, features=replace(SETTINGS.features, training_history="leave_one_day_out"))
+
+
+def _history_with_a_one_day_table() -> tuple[pd.DataFrame, int]:
+    events, history_end = _history_and_test()
+    # Num único dia do histórico (05/03), o usuário também lê `payment`.
+    extra = frame([ev("2026-03-05 13:00:03", tables=("payment",), query_id=7)])
+    return pd.concat([events, extra], ignore_index=True), history_end
+
+
+def test_training_windows_are_compared_with_the_other_days_only() -> None:
+    events, history_end = _history_with_a_one_day_table()
+    lodo, lodo_baselines = build_features(events, LODO, history_end)
+    in_sample, in_sample_baselines = build_features(events, IN_SAMPLE, history_end)
+    day = lodo["window_start_local"].str[:10] == "2026-03-05"
+    # Contra os outros dias, `payment` e o formato 7 são novos; contra o treino inteiro, não.
+    assert lodo.loc[day, "new_tables_frac"].iloc[0] == pytest.approx(1 / 2)
+    assert lodo.loc[day, "new_query_shapes_frac"].iloc[0] == pytest.approx(1 / 2)
+    assert in_sample.loc[day, "new_tables_frac"].iloc[0] == 0
+    # Os outros dias, as janelas depois do histórico e os históricos salvos não mudam.
+    after = lodo["window_start_ms"] >= history_end
+    assert (lodo.loc[~day & ~after, "new_tables_frac"] == 0).all()
+    pd.testing.assert_frame_equal(lodo[after], in_sample[after])
+    assert lodo_baselines == in_sample_baselines
+
+
+def test_user_with_a_single_history_day_has_no_reference_on_that_day() -> None:
+    events = frame([ev("2026-03-02 13:00:00"), ev("2026-03-02 13:00:01")])
+    features, _ = build_features(events, LODO, ts("2026-03-03 03:00:00.000"))
+    row = features.iloc[0]
+    assert row.new_tables_frac == 1.0 and row.hour_surprisal == pytest.approx(math.log(24))
+
+
+def test_unknown_training_history_mode_is_rejected() -> None:
+    with pytest.raises(ConfigError, match="training_history"):
+        replace(SETTINGS.features, training_history="tudo")
+
+
 def test_window_crossing_history_end_is_not_part_of_history() -> None:
     seven = replace(SETTINGS, features=replace(SETTINGS.features, window_minutes=7))
     history_end = ts("2026-03-02 13:10:00.000")  # não é múltiplo de 7 min

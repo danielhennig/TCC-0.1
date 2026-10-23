@@ -1,6 +1,8 @@
 {
   "run_id": "sim-s7-28d",
   "run_fingerprint": "89fc8d050f8bd4e7edc9254658f3c50be72b0d108191023f020af6d555cc7676",
+  "settings_fingerprint": "eff428518595dfeebf567f13d166bcd1ca213d8fc0bce4dffae91e5a0a20b32b",
+  "training_history": "leave_one_day_out",
   "window_minutes": 5,
   "history_end_utc": "2026-03-16T03:00:00.000+00:00",
   "features": [
@@ -130,7 +132,7 @@
     "passed": true
   },
   "timings_s": {
-    "leitura_e_eventos_s": 5.46,
-    "agregacao_s": 2.86
+    "leitura_e_eventos_s": 5.66,
+    "agregacao_s": 3.31
   }
 }

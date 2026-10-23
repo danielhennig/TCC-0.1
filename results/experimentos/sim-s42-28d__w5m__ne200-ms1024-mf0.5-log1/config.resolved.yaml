@@ -1,0 +1,306 @@
+model:
+  grid:
+    n_estimators:
+    - 100
+    - 200
+    - 500
+    max_samples:
+    - 256
+    - 1024
+    - 0.1
+    max_features:
+    - 0.5
+    - 0.75
+    - 1.0
+    log1p:
+    - true
+    - false
+  tuning_seeds:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  evaluation_seeds:
+  - 0
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  - 6
+  - 7
+  - 8
+  - 9
+  selection_metric: f1
+  n_jobs: 1
+  label_free:
+    n_estimators: 100
+    max_samples: auto
+    max_features: 1.0
+    log1p: false
+    train_quantile: 0.99
+  sensitivity_windows:
+  - 1
+  - 5
+  - 15
+  robustness:
+    simulation_seeds:
+    - 7
+    - 2026
+    results_dir: results/robustez
+  results_dir: results/experimentos
+  models_dir: data/models
+  figures:
+    dpi: 300
+    formats:
+    - png
+    - pdf
+    width_in: 6.3
+    font_size: 8.5
+rules:
+  rules:
+  - name: falhas_autenticacao
+    kind: fixed
+    feature: n_auth_failures
+    op: '>='
+    value: 3
+  - name: erro_permissao
+    kind: fixed
+    feature: n_permission_denied
+    op: '>='
+    value: 1
+  - name: rajada
+    kind: user_stat
+    feature: n_commands
+    stat: p99
+    multiplier: 3
+  - name: volume
+    kind: user_stat
+    feature: rows_returned_sum
+    stat: max
+    multiplier: 1
+  - name: dml_volume
+    kind: user_stat
+    feature: rows_affected_sum
+    stat: max
+    multiplier: 1
+  - name: hora_inedita
+    kind: unseen_hour
+sacla:
+  reader:
+    patterns:
+    - '*.json'
+    - '*.json.gz'
+    - '*.jsonl'
+    - '*.jsonl.gz'
+    zone_offsets_min:
+      UTC: 0
+      GMT: 0
+  events:
+    client_backend_types:
+    - client backend
+    - not initialized
+    ignore_users:
+    - postgres
+    partition_aliases:
+    - pattern: ^payment_p\d{4}_\d{2}$
+      table: payment
+    auth_failure_states:
+    - 28P01
+    - '28000'
+    permission_denied_states:
+    - '42501'
+  features:
+    window_minutes: 5
+    timezone: America/Sao_Paulo
+    weekend_days:
+    - 5
+    - 6
+    hour_smoothing: 1.0
+    robust_scale_floor: 1.0
+    training_history: leave_one_day_out
+  detector:
+    log1p_features:
+    - n_commands
+    - n_select
+    - n_insert
+    - n_update
+    - n_delete
+    - n_ddl
+    - n_other
+    - n_errors
+    - n_permission_denied
+    - n_auth_failures
+    - n_connections
+    - rows_returned_sum
+    - rows_returned_max
+    - rows_affected_sum
+    - duration_mean_ms
+    - duration_max_ms
+    - duration_p95_ms
+    - n_tables
+    - n_ips
+    n_estimators: 500
+    max_samples: 1024
+    max_features: 0.5
+    log1p: true
+    seed: 0
+    n_jobs: 1
+    train_alert_rate: 0.0144
+  report:
+    explain_features:
+    - n_commands
+    - n_select
+    - n_insert
+    - n_update
+    - n_delete
+    - n_ddl
+    - n_other
+    - n_errors
+    - n_permission_denied
+    - n_auth_failures
+    - n_connections
+    - rows_returned_sum
+    - rows_returned_max
+    - rows_affected_sum
+    - duration_max_ms
+    - n_tables
+    - n_ips
+    - hour_surprisal
+    - weekend
+    - new_tables_frac
+    - new_ips_frac
+    - new_query_shapes_frac
+    top_features: 3
+    max_tail_fraction: 0.05
+    episode_gap_windows: 1
+    max_html_episodes: 300
+run:
+  run_id: sim-s42-28d
+  seed: 42
+  start_date: '2026-03-02'
+  days: 28
+  timezone: America/Sao_Paulo
+  splits:
+    train:
+      start_ms: 1772420400000
+      end_ms: 1773630000000
+      start_utc: '2026-03-02T03:00:00.000+00:00'
+      end_utc: '2026-03-16T03:00:00.000+00:00'
+    validation:
+      start_ms: 1773630000000
+      end_ms: 1774234800000
+      start_utc: '2026-03-16T03:00:00.000+00:00'
+      end_utc: '2026-03-23T03:00:00.000+00:00'
+    test:
+      start_ms: 1774234800000
+      end_ms: 1774839600000
+      start_utc: '2026-03-23T03:00:00.000+00:00'
+      end_utc: '2026-03-30T03:00:00.000+00:00'
+  id_pools_sha256: ca31cfa6f9e80efb22feab768ac068e0b069a4a308ca9e8906892ed1f63801fd
+  config_sha256:
+    experiment.yaml: 2b4bc8950013b18f26502800dfcc02767abce03eb3b46337594095d63f7eeb12
+    profiles.yaml: c0812357a306e44f08bf98607ab1273e9c047d18a2e5a7bba5138249be151f43
+    queries.yaml: 80581d99273e13de2ab9aa2eee258cadfb0886a81775689a75da62dc48e661cb
+    anomalies.yaml: 5e341de1284c9049e6732d710a73644ad3af7323bf787b366fbd287122176670
+dataset:
+  run_id: sim-s42-28d
+  run_fingerprint: 991a82d41bfc4b1e68d77ac8a063408d3a10c48ec43ec93ec7e4f5eb5a365008
+  settings_fingerprint: eff428518595dfeebf567f13d166bcd1ca213d8fc0bce4dffae91e5a0a20b32b
+  training_history: leave_one_day_out
+  window_minutes: 5
+  history_end_utc: '2026-03-16T03:00:00.000+00:00'
+  features:
+  - n_commands
+  - n_select
+  - n_insert
+  - n_update
+  - n_delete
+  - n_ddl
+  - n_other
+  - n_errors
+  - n_permission_denied
+  - n_auth_failures
+  - n_connections
+  - rows_returned_sum
+  - rows_returned_max
+  - rows_affected_sum
+  - duration_mean_ms
+  - duration_max_ms
+  - duration_p95_ms
+  - n_tables
+  - n_ips
+  - hour_sin
+  - hour_cos
+  - weekend
+  - z_commands
+  - z_rows_returned
+  - hour_surprisal
+  - new_tables_frac
+  - new_ips_frac
+  - new_query_shapes_frac
+  read:
+    files: 29
+    records: 207769
+    malformed: 0
+    truncated: 0
+    unknown_zone: 0
+  parse:
+    events: 110738
+    unpaired_plans: 0
+    unparseable_plans: 0
+    ignored_lines: 2829
+  events: 110738
+  events_by_kind:
+    query: 107458
+    connection: 1048
+    disconnection: 1048
+    auth_failure: 733
+    query_error: 451
+  users_with_history: 10
+  windows_by_split:
+    train:
+      windows: 9109
+      anomalous: 34
+      contamination_pct: 0.37
+    validation:
+      windows: 4684
+      anomalous: 176
+      contamination_pct: 3.76
+    test:
+      windows: 4662
+      anomalous: 337
+      contamination_pct: 7.23
+  anomalous_windows_by_type:
+    dml_incomum:
+      test: 24
+      train: 1
+      validation: 15
+    falha_auth:
+      test: 44
+      train: 6
+      validation: 23
+    fora_horario:
+      test: 107
+      train: 5
+      validation: 68
+    leitura_atipica:
+      test: 49
+      train: 0
+      validation: 0
+    rajada:
+      test: 49
+      train: 12
+      validation: 27
+    sem_permissao:
+      test: 40
+      train: 6
+      validation: 27
+    volume_alto:
+      test: 24
+      train: 4
+      validation: 16
+  timings_s:
+    leitura_e_eventos_s: 5.68
+    agregacao_s: 3.49

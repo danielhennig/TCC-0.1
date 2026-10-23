@@ -29,6 +29,11 @@ features:
   # Piso do desvio robusto (1,4826 x MAD) para o z-score, evitando divisão por ~0 em usuários
   # muito regulares.
   robust_scale_floor: 1.0
+  # Atributos relativos das janelas do próprio histórico (treino):
+  # - leave_one_day_out: cada janela contra o histórico do usuário sem o seu dia (D45);
+  # - in_sample: contra o histórico inteiro, como na primeira avaliação (v1, D41). Nesse modo
+  #   as frações de novidade valem sempre 0 no treino e o Isolation Forest não as usa.
+  training_history: leave_one_day_out
 
 # Detector (módulo 3) para o uso real: `sacla fit` e `sacla score`. A avaliação (Fase 4) usa
 # a mesma lista log1p_features, mas escolhe hiperparâmetros e limiar em config/model.yaml.
@@ -38,17 +43,17 @@ detector:
                    n_permission_denied, n_auth_failures, n_connections, rows_returned_sum,
                    rows_returned_max, rows_affected_sum, duration_mean_ms, duration_max_ms,
                    duration_p95_ms, n_tables, n_ips]
-  # Configuração escolhida na validação da Fase 4 (docs/decisoes.md, D38).
-  n_estimators: 500
+  # Configuração escolhida na validação da avaliação v2 (docs/decisoes.md, D46).
+  n_estimators: 200
   max_samples: 1024
   max_features: 0.5
   log1p: true
   seed: 0
   n_jobs: 1
   # Sem rótulos no uso real, o limiar sai do próprio histórico: o score acima do qual fica esta
-  # fração das janelas do treino. 0,0144 é a fração que o limiar escolhido na validação da
-  # Fase 4 (semente 0) produz no treino (docs/decisoes.md, D40).
-  train_alert_rate: 0.0144
+  # fração das janelas do treino. 0,0213 é a fração que o limiar escolhido na validação da
+  # avaliação v2 (semente 0) produz no treino (docs/decisoes.md, D40 e D46).
+  train_alert_rate: 0.0213
 
 # Relatório de anomalias (módulo 4).
 report:

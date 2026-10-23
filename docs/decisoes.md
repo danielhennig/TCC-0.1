@@ -362,9 +362,10 @@ Notas:
   1/24, tudo "inédito".
 - **Formatos de consulta inéditos.** Este atributo vai além da lista mínima. Foi incluído porque
   o tipo inédito (`leitura_atipica`) usa tabelas permitidas e já conhecidas; o único sinal
-  genérico é o formato de consulta novo para o usuário. **Ver D41:** como o histórico é o
-  próprio treino, as três frações de novidade valem 0 em todas as janelas de treino e o
-  Isolation Forest não as usa.
+  genérico é o formato de consulta novo para o usuário. **Ver D41 e D45:** com o histórico
+  calculado sobre o próprio treino (v1), as três frações de novidade valiam 0 em todas as
+  janelas de treino e o Isolation Forest não as usava; desde a D45, cada janela de treino é
+  comparada com os outros dias do usuário.
 - **Transformação `log1p`** das contagens: é decisão do modelo e será avaliada na validação
   (Fase 4).
 
@@ -477,8 +478,10 @@ refeitos do zero. Nenhum hiperparâmetro, atributo ou regra foi alterado em fun�
 - **Sensibilidade de `max_samples` incompleta.** A coluna misturava inteiros e frações e
   perdia valores. Agora ela é gravada como texto.
 
-**D38 — Resultados da Fase 4** (`results/experimentos/sim-s42-28d__w5m__ne500-ms1024-mf0.5-log1/`,
-robustez em `results/robustez/`). O teste tem 4.662 janelas, 337 delas anômalas (7,23%), de 156
+**D38 — Resultados da Fase 4 (v1).** Arquivados em
+`results/historico/v1-historico-na-amostra/`. São os resultados com os atributos relativos do
+treino calculados na amostra (D41); a versão corrigida está na D46. O teste tem 4.662
+janelas, 337 delas anômalas (7,23%), de 156
 cenários. Configuração escolhida na validação: 500 árvores, `max_samples` 1024,
 `max_features` 0,5 e `log1p`.
 
@@ -570,21 +573,28 @@ roda sobre qualquer jsonlog, sem rótulos e sem a bancada:
   janelas do mesmo jeito.
 - `score --logs <pasta> --model <arquivo> --out <pasta> [--since] [--until]`: pontua um novo
   período com os históricos já ajustados e gera o relatório.
-- Hiperparâmetros: os escolhidos na validação da Fase 4 (`config/sacla.yaml`, `detector`). A
-  lista de atributos com `log1p` passou de `model.yaml` para `sacla.yaml`, porque é do SACLA;
-  a avaliação lê a mesma lista.
+- Hiperparâmetros: os escolhidos na validação da avaliação vigente (`config/sacla.yaml`,
+  `detector`; hoje a v2, D46). A lista de atributos com `log1p` passou de `model.yaml` para
+  `sacla.yaml`, porque é do SACLA; a avaliação lê a mesma lista.
+- `python tasks.py report` confere se o `detector` do `sacla.yaml` é o escolhido no experimento
+  e se a taxa de alertas corresponde ao limiar da validação. Se não for, avisa e mostra os
+  valores certos em `relatorio/resumo_anexo.json` (`uso_real`).
 
-*Evidência de equivalência:* `fit` no período de treino da simulação (`--until
-2026-03-16T03:00:00Z`) e `score` no de teste produziram as mesmas 9.109 janelas de treino e os
-**mesmos scores** que a semente 0 do experimento nas 4.662 janelas de teste (diferença máxima
-0,0). O caminho de uso real é, portanto, o mesmo que foi avaliado.
+*Evidência de equivalência* (conferida na v1 e de novo na v2): `fit` no período de treino da
+simulação (`--until 2026-03-16T03:00:00Z`) e `score` no de teste produziram as mesmas 9.109
+janelas de treino e os **mesmos scores** que a semente 0 do experimento nas 4.662 janelas de
+teste (diferença máxima 0,0). O caminho de uso real é, portanto, o mesmo que foi avaliado.
 
 **D40 — Limiar sem rótulos no uso real.** Em produção não há rótulos para escolher o limiar.
 Ele é o score acima do qual fica uma fração fixa das janelas do próprio histórico
-(`detector.train_alert_rate`). O valor 1,44% é a fração que o limiar escolhido na validação
-(semente 0) produz no treino; com ele, o `fit` dá limiar 0,5544 contra 0,5547 do experimento, e
-só 3 das 4.662 janelas de teste mudam de lado. A taxa é um parâmetro de operação: diz quantos
-alertas o analista aceita receber num período normal.
+(`detector.train_alert_rate`). O valor é a fração que o limiar escolhido na validação
+(semente 0) produz no treino:
+- v2: 2,13%; o `fit` dá limiar 0,5331 contra 0,5332 do experimento, e só 1 das 4.662 janelas de
+  teste muda de lado;
+- v1: 1,44%; 0,5544 contra 0,5547, com 3 janelas mudando de lado.
+
+A taxa é um parâmetro de operação: diz quantos alertas o analista aceita receber num período
+normal.
 
 **D41 — Achado: atributos constantes no treino não influenciam o Isolation Forest.** O
 scikit-learn só corta as árvores em atributos que variam na amostra. Nas janelas de treino,
@@ -598,7 +608,9 @@ Consequências:
   IF detecta do tipo inédito vem de volume, hora e duração.
 - Uma correção possível é calcular os atributos relativos das janelas de treino fora da
   amostra (ex.: histórico de outros dias, "deixando um dia de fora"). Isso muda a Fase 3 e
-  exige refazer a avaliação com um teste já observado; a decisão fica registrada para revisão.
+  exige refazer a avaliação com um teste já observado.
+- **Situação:** corrigido na D45 (opção aprovada na revisão da Fase 5). Os resultados acima
+  (D38) passam a ser a v1, arquivada em `results/historico/v1-historico-na-amostra/`.
 
 **Achado relacionado: o score satura fora da faixa do treino.** Os cortes das árvores ficam
 dentro da faixa de valores do treino. Uma janela com 300 comandos, quando o máximo do treino
@@ -645,12 +657,16 @@ valor maior ou igual ao da janela (cauda superior).
   reproduz os scores gravados pela avaliação. À parte, `anexo_*_vs_manifesto.csv` cruza
   alertas e episódios com o manifesto; é a única saída da Fase 5 que usa rótulos.
 
-**Resultado no teste** (semente 0): 233 janelas sinalizadas em 158 episódios. Destes, 111
-contêm ao menos uma janela de cenário e 47 não contêm nenhuma. Gerar o relatório com as
-explicações levou 0,65 s.
+**Resultado no teste** (semente 0):
+- v2: 295 janelas sinalizadas em 195 episódios; 125 contêm ao menos uma janela de cenário e
+  70 não contêm nenhuma. Gerar o relatório com as explicações levou 0,6 s.
+- v1: 233 janelas em 158 episódios (111 com cenário e 47 sem).
 
-**Achado — deriva de dados no serviço batch.** Os 6 episódios de maior score são a rotina
-noturna legítima do `svc_batch`, um por noite do teste. A explicação mostra o motivo: o lote
+O limiar da semente 0 na v2 é mais baixo (2,13% do treino acima dele, contra 1,44%), por isso
+ela sinaliza mais janelas. Na média das 10 sementes, os falsos positivos ficaram iguais (65).
+
+**Achado — deriva de dados no serviço batch** (v1 e v2). Os 6 episódios de maior score são a
+rotina noturna legítima do `svc_batch`, um por noite do teste. A explicação mostra o motivo: o lote
 passou a ler 4.290–4.619 linhas, acima do máximo do histórico (4.014). As tabelas `rental` e
 `payment` crescem com a simulação, e o lote lê mais a cada semana.
 - É uma deriva lenta dos dados, não uma anomalia de acesso.
@@ -673,3 +689,120 @@ passou a ler 4.290–4.619 linhas, acima do máximo do histórico (4.014). As ta
 - As figuras são feitas para impressão (só modo claro). Os PDFs não gravam data de criação:
   refazê-las gera arquivos idênticos (conferido por hash), exceto `tempos_etapas`, que mostra o
   tempo medido em cada execução.
+
+## 10. Correção dos atributos relativos no treino (v2)
+
+**D45 — Histórico "deixando um dia de fora" para as janelas de treino.** Corrige o defeito da
+D41. Opção escolhida na revisão da Fase 5, entre manter o defeito como limitação ou corrigir e
+refazer a avaliação.
+- **Regra** (`features.training_history: leave_one_day_out`, em `config/sacla.yaml`): cada
+  janela do treino é comparada com o histórico do mesmo usuário **sem o dia local dela**.
+  Valem para todos os atributos relativos: z robustos, raridade da hora e frações de novidade.
+  Exemplo: uma tabela que o usuário só leu num dia do treino conta como inédita naquele dia.
+- **O que não muda:**
+  - janelas de validação e teste, e o uso real (`sacla score`), continuam comparadas com o
+    treino inteiro;
+  - os históricos salvos são os mesmos;
+  - os atributos absolutos e as regras (que usam só atributos absolutos e horas) são os
+    mesmos.
+- **Por quê:** treino e teste passam a ter atributos relativos da mesma natureza, calculados
+  "fora da amostra". Antes, o treino era comparado consigo mesmo: a novidade era sempre 0 e os
+  z e a raridade da hora eram menores do que seriam para uma janela nova.
+- **Usuário com um só dia de histórico:** naquele dia fica sem referência e é tratado como
+  usuário sem histórico.
+- **O modo antigo continua disponível** (`in_sample`), para reproduzir a v1.
+- **Conjuntos refeitos sozinhos:** o resumo de cada conjunto rotulado passou a guardar uma
+  impressão digital da configuração de leitura, eventos e atributos (`settings_fingerprint`).
+  A avaliação e a robustez remontam o conjunto quando ela muda. Antes, só uma nova simulação
+  disparava a remontagem.
+- **Testes:** `test_training_windows_are_compared_with_the_other_days_only` (com uma tabela
+  lida em um único dia: inédita no modo novo, 0 no antigo; validação, teste e históricos
+  idênticos nos dois modos), `test_user_with_a_single_history_day_has_no_reference_on_that_day`
+  e `tests/test_dataset.py`.
+
+**Transparência metodológica.** A v2 usa o conjunto de teste uma segunda vez. Para que isso
+não vire escolha guiada pelo teste:
+- o defeito foi achado sem olhar desempenho: um atributo constante no treino e o efeito nulo
+  de forçá-lo (D41);
+- a correção é estrutural, decidida antes de qualquer número da v2;
+- o protocolo da v2 é o mesmo da v1: grade, seleção na validação, sementes e regras;
+- a v1 fica arquivada e as duas são reportadas lado a lado (D46). A monografia deve apresentar
+  a v2 como versão corrigida, sem esconder a v1.
+
+**D46 — Resultados da avaliação corrigida (v2) e comparação com a v1.** Mesmo protocolo da
+D33, com os atributos da D45. Resultados em
+`results/experimentos/sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1/` e
+`results/robustez/sim-s42-28d__w5m__ne200-ms1024-mf0.5-log1/`.
+- **Configuração escolhida na validação:** 200 árvores, `max_samples` 1024, `max_features` 0,5
+  e `log1p`. A v1 escolhera 500 árvores. A diferença entre 200 e 500 é pequena (F1 de validação
+  61,0 contra 60,4).
+- **Validação:** F1 de 61,0% (v1: 57,0%).
+
+*Evidência de que a correção funcionou:*
+- Nas janelas de treino, a novidade deixou de ser constante: 83 janelas com IP inédito, 13 com
+  formato de consulta inédito e 2 com tabela inédita (antes, 0 em todas).
+- Forçar cada fração de novidade a 1 no teste agora muda o score em até 0,076 (IP), 0,052
+  (formato) e 0,015 (tabela); antes, nada mudava.
+- Só `n_ddl` continua constante, porque não há DDL na simulação.
+
+**Teste, v1 × v2** (média ± desvio nas 10 sementes; %):
+
+| Detector | F1 v1 | F1 v2 | Cenários v1 | Cenários v2 | ROC-AUC v1 → v2 | PR-AUC v1 → v2 |
+|---|---:|---:|---:|---:|---:|---:|
+| IF ajustado | 63,8 ± 1,1 | **68,1 ± 2,0** | 69,8 ± 2,3 | **75,5 ± 4,7** | 0,939 → 0,953 | 0,644 → 0,700 |
+| IF sem rótulos | 35,8 ± 2,7 | 39,3 ± 2,3 | 33,8 ± 3,3 | 36,3 ± 3,6 | 0,902 → 0,918 | 0,456 → 0,507 |
+| Regras | 80,2 | 80,2 | 73,1 | 73,1 | — | — |
+| IF ∪ regras | 79,2 ± 0,9 | 79,7 ± 1,3 | 84,7 ± 1,1 | 86,2 ± 1,3 | — | — |
+
+Na v2, o IF ajustado teve precisão 76,5 ± 3,7%, recall 61,7 ± 4,3% e, em média, 65 falsos
+positivos (os mesmos da v1). As regras não mudam, o que confere com a D45: elas só usam
+atributos absolutos e horas.
+
+**Robustez, v1 × v2** (três simulações; média ± desvio das médias por simulação):
+
+| Detector | F1 v1 | F1 v2 | Cenários v1 | Cenários v2 |
+|---|---:|---:|---:|---:|
+| IF ajustado | 62,4 ± 1,2 | 67,2 ± 1,6 | 66,9 ± 3,2 | 71,4 ± 6,2 |
+| IF sem rótulos | 35,9 ± 2,4 | 38,2 ± 2,2 | 32,1 ± 3,6 | 33,7 ± 3,4 |
+| Regras | 78,8 ± 4,2 | 78,8 ± 4,2 | 73,1 ± 1,3 | 73,1 ± 1,3 |
+| IF ∪ regras | 79,0 ± 3,0 | 80,0 ± 2,3 | 85,0 ± 3,5 | 85,9 ± 4,3 |
+
+A melhora do IF (+4 a +5 pontos de F1) aparece nas três simulações, não só na de referência.
+
+**Tipo inédito (`leitura_atipica`), cenários detectados pelo IF:**
+
+| Intensidade | v1 | v2 |
+|---|---:|---:|
+| baixa | 27,5% | 37,5% |
+| média | 25,0% | 40,0% |
+| alta | 55,0% | 87,5% |
+
+Por cenário (maioria das sementes), na v2:
+- só o IF: 4 cenários (v1: 3);
+- ambos: 4 (v1: 1);
+- só as regras: 0 (v1: 3);
+- nenhum: 4 (v1: 5).
+
+O IF passou a detectar, na maioria das sementes, um cenário do serviço de aplicação e os três
+dos gerentes. Continuam sem detecção dois cenários de atendentes e dois do serviço.
+
+**Outros tipos:** o IF melhorou em `dml_incomum` (média: 15% → 36%), `fora_horario` baixa
+(80% → 91%), `volume_alto` baixa (27,5% → 55%) e `sem_permissao` baixa (42,5% → 54%).
+`rajada` ficou parecida (média 90% → 82,5%; alta 87,5% nas duas). `falha_auth` variou para os
+dois lados (baixa 91% → 84%; média 62,5% → 65%; alta 77,5% → 84%). A variação entre sementes
+é maior na v2 (desvio de F1 2,0 contra 1,1), porque 200 árvores são menos estáveis que 500.
+
+**Sensibilidade (validação, v2):**
+- `max_samples` = 256 continua o pior caso (F1 47,6%);
+- sem `log(1+x)`, o F1 cai para 56,7%;
+- janela de 1 min: 82,0% dos cenários com 422 alertas; 5 min: 70,2% com 191; 15 min: F1 68,8%
+  e 67,8% dos cenários com 106.
+
+**Interpretação.**
+1. Corrigir o cálculo fora da amostra deu ao IF o sinal de novidade que o desenho previa (D29).
+   Os maiores ganhos estão no tipo inédito, como esperado.
+2. As regras continuam com o maior F1 sozinhas, pelos mesmos motivos da D38. A distância para
+   o IF caiu de 16,4 para 12,1 pontos.
+3. A união IF ∪ regras segue como a melhor cobertura: 86,2% dos cenários.
+4. Mais estabilidade pediria fixar 500 árvores. Mas a escolha é feita só na validação, onde 200
+   e 500 empatam dentro do desvio; mudar agora seria escolher pelo teste.
