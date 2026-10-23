@@ -117,7 +117,10 @@ def run_data(result: RunEvaluation, group: str) -> RunData:
 
 
 def flags_frame(data: RunData) -> pd.DataFrame:
-    """Janelas de teste com as sinalizações de cada detector e semente (para conferência)."""
+    """Janelas de teste com as sinalizações de cada detector e semente (para conferência).
+
+    `<detector>_s<k>` é a k-ésima semente de `evaluation_seeds` (config/model.yaml), na ordem.
+    """
     frame = data.windows.copy()
     for detector, matrix in data.flags.items():
         if detector == "if_mais_regras":

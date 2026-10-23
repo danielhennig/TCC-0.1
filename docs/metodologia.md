@@ -396,6 +396,9 @@ explicados e a triagem de cada um (D47–D50).
 - **Variação medida.** 10 sementes do modelo e 8 simulações (3 de desenvolvimento e 5
   confirmatórias), com intervalos de confiança e testes pareados. As simulações vêm todas do
   mesmo gerador: a variação medida é a de sementes, não a de ambientes diferentes.
+- **O que os intervalos medem.** As simulações são estratos fixos do bootstrap. Os intervalos
+  medem a incerteza de amostragem das janelas e dos cenários de teste, não a variação entre
+  simulações, que é mostrada à parte (D53).
 - **Poder estatístico no tipo inédito.** São 60 cenários inéditos, e só 35 são discordantes
   entre o IF e as regras. Uma diferença de 9 pontos não pode ser distinguida do acaso com esse
   tamanho (H3). A ausência de significância não prova que os dois são iguais.

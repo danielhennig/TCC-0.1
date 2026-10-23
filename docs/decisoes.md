@@ -1110,6 +1110,11 @@ Nas simulações de desenvolvimento, que só servem de referência, o F1 do IF f
 detectou 85,9% dos cenários. Entre as cinco simulações confirmatórias, o F1 do IF variou de
 63,5 a 68,8.
 
+*Como ler os intervalos.* O bootstrap reamostra janelas e cenários dentro de cada simulação,
+com as simulações como estratos fixos. O intervalo mede a incerteza de amostragem dessas
+semanas de teste, com os modelos já ajustados. Ele não inclui a variação entre simulações, que
+aparece à parte: pontos cinza da figura e faixa de 63,5 a 68,8 acima.
+
 *Interpretação:*
 1. **O resultado se repetiu em dados novos.** Nenhuma conclusão do desenvolvimento dependia do
    teste reutilizado da semente 42 (D45). Para o IF ajustado, as regras e a união, os números
