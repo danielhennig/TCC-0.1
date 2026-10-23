@@ -971,3 +971,107 @@ tela.
   - com um só banco, o gráfico não tem legenda;
   - análises sem janelas nem erro não são mais guardadas. Depois do fim da reprodução eram
     uma linha a cada 5 s; 1.840 linhas vazias foram removidas do estado existente.
+
+## 12. Validação confirmatória (Fase 7)
+
+**D52 — Pré-registro da validação confirmatória.** Escrito e versionado ANTES de simular as
+sementes novas e de rodar qualquer análise da Fase 7: no `git log`, o commit deste registro
+vem antes do commit dos resultados. Ele responde a três fraquezas:
+- o teste da simulação 42 foi usado duas vezes (v1 e v2, D45);
+- as comparações entre detectores só tinham média ± desvio, sem teste;
+- não se sabia o peso de cada grupo de atributos, nem o que se perde sem o `auto_explain`, que
+  custa ~10% de latência (D12).
+
+*Fica congelado (nada muda depois de ver os números):*
+- o Isolation Forest `ne200-ms1024-mf0.5-log1` (D46), com os atributos e o histórico "deixando
+  um dia de fora" (D45);
+- as regras de `config/rules.yaml` (D34);
+- o protocolo da robustez (D36): em cada simulação, para cada uma das 10 sementes do modelo, só
+  o limiar é escolhido, na validação daquela simulação; o teste é avaliado uma vez;
+- o simulador e a configuração da simulação (`config/profiles.yaml`, `queries.yaml`,
+  `anomalies.yaml`).
+
+*Simulações confirmatórias:* sementes 101, 202, 303, 404 e 505, com 28 dias, nunca simuladas
+antes (até aqui, `data/runs` só tem 42, 7 e 2026).
+- Nas sementes 42, 7 e 2026, a semana de teste tem 156 cenários, 12 deles do tipo inédito.
+  Espera-se o mesmo nas novas: 780 cenários, 60 inéditos.
+- Se uma simulação falhar numa verificação (retime, conferência com o executor, D31), o defeito
+  é corrigido e a mesma semente é refeita, com registro. Nenhuma semente é trocada nem
+  descartada.
+
+*Hipóteses* (`stats.hypotheses` em `config/model.yaml`). Testes bicaudais, α = 0,05, com
+correção de Holm sobre as três, no agregado das cinco semanas de teste:
+
+| | Pergunta | Medida | Teste |
+|---|---|---|---|
+| H1 | O IF acrescenta cenários às regras? | cenários detectados: IF ∪ regras × regras | McNemar exato |
+| H2 | A união muda o F1 por janela em relação às regras? | F1: IF ∪ regras × regras | permutação pareada por blocos |
+| H3 | O IF detecta o tipo inédito melhor que as regras? | cenários `leitura_atipica` detectados: IF × regras | McNemar exato |
+
+- **Cenário detectado:** ao menos uma janela dele sinalizada (D33). Para o IF e para a união,
+  isso precisa acontecer em pelo menos metade das 10 sementes do modelo, como em
+  `test_scenario_overlap`.
+- **McNemar exato:** teste binomial nos cenários discordantes (só um dos dois detecta). Em H1,
+  a união contém as regras, então os discordantes só podem ser a favor da união. O teste diz se
+  o ganho é maior que o acaso; o tamanho do ganho vem do intervalo.
+- **Permutação pareada (H2):**
+  - bloco = usuário × dia local, porque janelas vizinhas não são independentes;
+  - em cada permutação, cada bloco troca ou não, com probabilidade 1/2, as saídas dos dois
+    detectores;
+  - a estatística é a diferença de F1, com a média nas 10 sementes para a união;
+  - 10.000 permutações; p = (1 + nº de |Δ*| ≥ |Δ|) / (10.000 + 1).
+- **Expectativa**, tirada das sementes 42, 7 e 2026 (exploratórias):
+  - H1 e H3 a favor do IF;
+  - H2 sem diferença (F1 de 79,7 × 80,2 na v2).
+  Fica escrita para que a pergunta não mude depois.
+
+*Intervalos de confiança* (descritivos): 95%, bootstrap percentil, 2.000 reamostragens,
+semente 0.
+- Precisão, recall e F1 por janela: reamostragem de blocos usuário × dia, estratificada por
+  simulação.
+- Cenários detectados: reamostragem de cenários, estratificada por simulação.
+- Diferença entre dois detectores: a mesma reamostragem para os dois (pareada).
+- São calculados:
+  - no agregado confirmatório e em cada simulação;
+  - só como referência, nas simulações de desenvolvimento (42, 7 e 2026), que não entram nos
+    testes.
+- Diferenças só descritivas, sem teste:
+  - F1 e cenários detectados, IF × regras;
+  - precisão e recall, IF ∪ regras × regras.
+
+*Ablação* (exploratória; não muda o modelo):
+- Cada grupo de atributos sai do IF, um de cada vez, com os hiperparâmetros congelados
+  (`max_features` = 0,5 passa a valer sobre os atributos que sobram).
+- Grupos em `ablation.groups`:
+  - relativos ao histórico;
+  - novidade;
+  - horário;
+  - origem;
+  - "sem `auto_explain`": linhas e tabelas, que vêm do plano (D27).
+- Usa só o treino e a validação das 8 simulações (42, 7, 2026 e as 5 novas), com as 5 sementes
+  de ajuste. O teste nunca é usado.
+- Medidas:
+  - F1 com o melhor limiar da validação (otimista, mas igual para todas as variantes);
+  - PR-AUC;
+  - cenários detectados nesse limiar;
+  - variação em relação ao conjunto completo.
+- **Sem `auto_explain`, também:**
+  - as regras sem `volume` e `dml_volume`;
+  - a união das duas versões reduzidas.
+- Intervalo: t de Student sobre as 8 simulações (a simulação é a réplica independente).
+
+*Comandos:*
+- `python tasks.py confirm --exp-id <exp>` → `results/confirmatorio/<exp>/`;
+- `python tasks.py ablation --exp-id <exp>` → `results/ablacao/<exp>/`.
+
+*Compromisso:* os resultados são relatados como saírem, inclusive se forem piores que os da v2
+ou se alguma hipótese não se confirmar.
+
+Fontes:
+- McNemar exato para comparar classificadores no mesmo conjunto: Dietterich (1998), *Neural
+  Computation* 10(7).
+- Correção de Holm: Holm (1979), *Scandinavian Journal of Statistics* 6(2).
+- Bootstrap percentil: Efron e Tibshirani (1993), *An Introduction to the Bootstrap*.
+- Permutação pareada (aleatorização aproximada) para F1: Noreen (1989), *Computer-Intensive
+  Methods for Testing Hypotheses*.
+- `scipy.stats.binomtest`: https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.binomtest.html

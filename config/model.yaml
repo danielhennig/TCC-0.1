@@ -35,6 +35,50 @@ robustness:
   simulation_seeds: [7, 2026]
   results_dir: results/robustez     # separado: reavaliar o experimento não apaga a robustez
 
+# Validação confirmatória (Fase 7; pré-registro em docs/decisoes.md, D52). A configuração do
+# experimento fica congelada e é avaliada, com o protocolo da robustez, em simulações novas.
+confirmatory:
+  simulation_seeds: [101, 202, 303, 404, 505]   # nunca simuladas antes do pré-registro
+  results_dir: results/confirmatorio
+
+# Estatística da Fase 7 (D52).
+stats:
+  confidence: 0.95                  # intervalos por bootstrap percentil
+  alpha: 0.05                       # nível dos testes, com correção de Holm sobre as hipóteses
+  bootstrap_resamples: 2000
+  permutation_resamples: 10000      # teste de permutação pareada por blocos (F1)
+  seed: 0
+  majority: 0.5                     # IF detecta o cenário em ao menos esta fração das sementes
+  # Hipóteses confirmatórias, testadas no agregado das simulações confirmatórias.
+  #   metric: scenarios (cenários detectados; McNemar exato) ou f1 (por janela; permutação)
+  #   subset: all (todos os cenários) ou novel (só o tipo inédito)
+  hypotheses:
+    - {id: H1, metric: scenarios, subset: all, a: if_mais_regras, b: regras}
+    - {id: H2, metric: f1, subset: all, a: if_mais_regras, b: regras}
+    - {id: H3, metric: scenarios, subset: novel, a: isolation_forest, b: regras}
+  # Diferenças só descritivas (intervalo, sem teste).
+  descriptive:
+    - {metric: f1, subset: all, a: isolation_forest, b: regras}
+    - {metric: precision, subset: all, a: if_mais_regras, b: regras}
+    - {metric: recall, subset: all, a: if_mais_regras, b: regras}
+    - {metric: scenarios, subset: all, a: isolation_forest, b: regras}
+
+# Ablação (Fase 7, D52; exploratória): cada grupo de atributos sai do Isolation Forest, um de
+# cada vez, com os hiperparâmetros congelados. Só treino e validação; o teste não é usado.
+ablation:
+  results_dir: results/ablacao
+  groups:
+    relativos: [z_commands, z_rows_returned, hour_surprisal, new_tables_frac, new_ips_frac,
+                new_query_shapes_frac]
+    novidade: [new_tables_frac, new_ips_frac, new_query_shapes_frac]
+    horario: [hour_sin, hour_cos, weekend, hour_surprisal]
+    origem: [n_ips, new_ips_frac]
+    # Linhas e tabelas vêm do plano do auto_explain (D27): sem ele, esses atributos não existem.
+    sem_auto_explain: [rows_returned_sum, rows_returned_max, rows_affected_sum, n_tables,
+                       z_rows_returned, new_tables_frac]
+  auto_explain_group: sem_auto_explain
+  auto_explain_rules: [volume, dml_volume]      # regras que usam linhas (config/rules.yaml)
+
 results_dir: results/experimentos
 models_dir: data/models              # modelos treinados (não versionados)
 
