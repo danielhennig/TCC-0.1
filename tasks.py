@@ -14,6 +14,7 @@ import subprocess
 import sys
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent
 COMPOSE = ["docker", "compose", "--project-directory", str(ROOT)]
@@ -110,13 +111,7 @@ def robustness(extra: list[str]) -> None:
         sys.exit("informe --exp-id <pasta em results/experimentos>")
     resimulate = "--resimulate" in extra
     extra = [arg for arg in extra if arg != "--resimulate"]
-    plan = json.loads(_capture([*ANALYSIS, "python", "-m", "evaluation.cli", "robustness-plan"]))
-    for seed, run_id, run_dir in zip(plan["seeds"], plan["run_ids"], plan["run_dirs"], strict=True):
-        if not resimulate and (ROOT / run_dir / "run.json").exists():
-            print(f"{run_id}: execução já existe em {run_dir}; não será simulada de novo")
-            continue
-        simulate(["--seed", str(seed)])
-        features(["--run-id", run_id])
+    plan = _simulate_plan("robustness-plan", resimulate)
     run(
         [
             *ANALYSIS,
@@ -129,6 +124,38 @@ def robustness(extra: list[str]) -> None:
             *plan["run_ids"],
         ]
     )
+
+
+def confirm(extra: list[str]) -> None:
+    """Validação confirmatória pré-registrada (D52) em simulações novas (ex.: --exp-id <pasta>).
+
+    Simula só as sementes confirmatórias que ainda não têm execução; --resimulate refaz todas.
+    """
+    if "--exp-id" not in extra:
+        sys.exit("informe --exp-id <pasta em results/experimentos>")
+    resimulate = "--resimulate" in extra
+    extra = [arg for arg in extra if arg != "--resimulate"]
+    _simulate_plan("confirm-plan", resimulate)
+    run([*ANALYSIS, "python", "-m", "evaluation.cli", "confirm", *extra])
+
+
+def ablation(extra: list[str]) -> None:
+    """Ablação de atributos só na validação (D52; ex.: --exp-id <pasta>)."""
+    run([*ANALYSIS, "python", "-m", "evaluation.cli", "ablation", *extra])
+
+
+def _simulate_plan(command: str, resimulate: bool) -> dict[str, list[Any]]:
+    """Simula (e monta o conjunto de) cada semente do plano que ainda não tem execução."""
+    plan: dict[str, list[Any]] = json.loads(
+        _capture([*ANALYSIS, "python", "-m", "evaluation.cli", command])
+    )
+    for seed, run_id, run_dir in zip(plan["seeds"], plan["run_ids"], plan["run_dirs"], strict=True):
+        if not resimulate and (ROOT / run_dir / "run.json").exists():
+            print(f"{run_id}: execução já existe em {run_dir}; não será simulada de novo")
+            continue
+        simulate(["--seed", str(seed)])
+        features(["--run-id", run_id])
+    return plan
 
 
 def report(extra: list[str]) -> None:
@@ -232,6 +259,8 @@ TASKS: dict[str, Callable[[list[str]], None]] = {
     "features": features,
     "evaluate": evaluate,
     "robustness": robustness,
+    "confirm": confirm,
+    "ablation": ablation,
     "report": report,
     "fit": fit,
     "score": score,

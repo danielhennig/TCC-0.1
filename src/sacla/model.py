@@ -4,6 +4,9 @@ O score de anomalia é o oposto de `score_samples` (quanto MAIOR, mais anômala 
 parâmetro `contamination` fica em 'auto' porque, no scikit-learn, ele só define o limiar
 (`offset_`) e não muda as árvores; o SACLA usa um limiar de score explícito, escolhido fora do
 modelo (na validação, ou por quantil do treino quando não há rótulos).
+
+O modelo usa todos os atributos de FEATURE_COLUMNS. Um subconjunto só é usado na ablação da
+avaliação (D52), para medir quanto cada grupo de atributos contribui.
 """
 
 from __future__ import annotations
@@ -43,11 +46,25 @@ class ModelParams:
         }
 
 
+def feature_subset(features: tuple[str, ...]) -> tuple[str, ...]:
+    """Subconjunto válido de FEATURE_COLUMNS, na ordem de FEATURE_COLUMNS."""
+    unknown = sorted(set(features) - set(FEATURE_COLUMNS))
+    if unknown:
+        raise ValueError(f"atributos desconhecidos: {unknown}")
+    chosen = tuple(c for c in FEATURE_COLUMNS if c in set(features))
+    if not chosen:
+        raise ValueError("o modelo precisa de ao menos um atributo")
+    return chosen
+
+
 def feature_matrix(
-    frame: pd.DataFrame, log1p: bool, log1p_features: tuple[str, ...]
+    frame: pd.DataFrame,
+    log1p: bool,
+    log1p_features: tuple[str, ...],
+    features: tuple[str, ...] = FEATURE_COLUMNS,
 ) -> np.ndarray[Any, np.dtype[np.float64]]:
-    """Matriz na ordem de FEATURE_COLUMNS, com log(1 + x) nas colunas indicadas."""
-    data = frame.loc[:, list(FEATURE_COLUMNS)].astype(float).copy()
+    """Matriz com as colunas `features`, com log(1 + x) nas colunas indicadas."""
+    data = frame.loc[:, list(features)].astype(float).copy()
     if log1p:
         columns = [c for c in log1p_features if c in data.columns]
         if (data[columns] < 0).any().any():
@@ -63,6 +80,9 @@ class SaclaModel:
     log1p_features: tuple[str, ...]
     forest: IsolationForest = field(repr=False)
     threshold: float | None = None
+    # Atributos usados. O padrão (todos) também vale para modelos gravados antes deste campo:
+    # o dataclass guarda o padrão como atributo da classe.
+    features: tuple[str, ...] = FEATURE_COLUMNS
 
     @classmethod
     def fit(
@@ -72,7 +92,9 @@ class SaclaModel:
         seed: int,
         log1p_features: tuple[str, ...],
         n_jobs: int = 1,
+        features: tuple[str, ...] = FEATURE_COLUMNS,
     ) -> SaclaModel:
+        chosen = feature_subset(features)
         forest = IsolationForest(
             n_estimators=params.n_estimators,
             max_samples=params.max_samples,
@@ -81,12 +103,18 @@ class SaclaModel:
             random_state=seed,
             n_jobs=n_jobs,
         )
-        forest.fit(feature_matrix(train, params.log1p, log1p_features))
-        return cls(params=params, seed=seed, log1p_features=log1p_features, forest=forest)
+        forest.fit(feature_matrix(train, params.log1p, log1p_features, chosen))
+        return cls(
+            params=params,
+            seed=seed,
+            log1p_features=log1p_features,
+            forest=forest,
+            features=chosen,
+        )
 
     def score(self, frame: pd.DataFrame) -> np.ndarray[Any, np.dtype[np.float64]]:
         """Score de anomalia por janela (maior = mais anômala)."""
-        matrix = feature_matrix(frame, self.params.log1p, self.log1p_features)
+        matrix = feature_matrix(frame, self.params.log1p, self.log1p_features, self.features)
         return np.asarray(-self.forest.score_samples(matrix), dtype=np.float64)
 
     def flag(self, frame: pd.DataFrame) -> np.ndarray[Any, np.dtype[np.bool_]]:

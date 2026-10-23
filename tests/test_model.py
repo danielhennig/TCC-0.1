@@ -70,3 +70,39 @@ def test_flag_requires_threshold_and_model_round_trips(tmp_path: Path) -> None:
 
 def test_slug_identifies_the_configuration() -> None:
     assert PARAMS.slug() == "ne50-ms64-mf1-log1"
+
+
+def test_default_features_are_all_and_give_the_same_scores_as_before() -> None:
+    # A ablação (D52) não pode mudar o modelo padrão: todos os atributos, mesmos scores.
+    train, probe = synthetic(300), synthetic(20, seed=3)
+    default = SaclaModel.fit(train, PARAMS, 4, LOG_FEATURES)
+    explicit = SaclaModel.fit(train, PARAMS, 4, LOG_FEATURES, features=FEATURE_COLUMNS)
+    assert default.features == FEATURE_COLUMNS
+    assert np.array_equal(default.score(probe), explicit.score(probe))
+
+
+def test_feature_subset_ignores_the_removed_columns() -> None:
+    train, probe = synthetic(300), synthetic(20, seed=3)
+    removed = ("rows_returned_sum", "n_tables")
+    kept = tuple(c for c in reversed(FEATURE_COLUMNS) if c not in removed)
+    model = SaclaModel.fit(train, PARAMS, 4, LOG_FEATURES, features=kept)
+    assert model.features == tuple(c for c in FEATURE_COLUMNS if c not in removed)  # ordem fixa
+    changed = probe.assign(rows_returned_sum=1e9, n_tables=1e9)
+    assert np.array_equal(model.score(probe), model.score(changed))
+    retrained = SaclaModel.fit(train.assign(n_tables=-5.0), PARAMS, 4, LOG_FEATURES, features=kept)
+    assert np.array_equal(model.score(probe), retrained.score(probe))
+
+
+def test_unknown_or_empty_feature_subset_is_rejected() -> None:
+    with pytest.raises(ValueError):
+        SaclaModel.fit(synthetic(50), PARAMS, 0, LOG_FEATURES, features=("nao_existe",))
+    with pytest.raises(ValueError):
+        SaclaModel.fit(synthetic(50), PARAMS, 0, LOG_FEATURES, features=())
+
+
+def test_model_saved_before_the_features_field_still_uses_every_feature() -> None:
+    model = SaclaModel.fit(synthetic(200), PARAMS, 2, LOG_FEATURES)
+    old = SaclaModel.__new__(SaclaModel)
+    old.__dict__.update({k: v for k, v in model.__dict__.items() if k != "features"})
+    assert old.features == FEATURE_COLUMNS
+    assert np.array_equal(old.score(synthetic(10, seed=5)), model.score(synthetic(10, seed=5)))

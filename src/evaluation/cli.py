@@ -10,6 +10,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from evaluation.ablation import run_ablation
+from evaluation.confirmatory import run_confirmatory
 from evaluation.dataset import build_dataset, dataset_name
 from evaluation.experiment import run_experiment
 from evaluation.plots import make_figures
@@ -39,6 +41,11 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("--run-id", help="execução em data/runs (padrão: experiment.yaml)")
         p.add_argument("--window", type=int, help="minutos por janela (padrão: sacla.yaml)")
     sub.add_parser("robustness-plan", help="mostra as sementes de simulação da robustez (JSON)")
+    sub.add_parser("confirm-plan", help="mostra as sementes das simulações confirmatórias (JSON)")
+    p_conf = sub.add_parser("confirm", help="validação confirmatória pré-registrada (D52)")
+    p_conf.add_argument("--exp-id", required=True, help="pasta em results/experimentos")
+    p_abl = sub.add_parser("ablation", help="ablação de atributos na validação (D52)")
+    p_abl.add_argument("--exp-id", required=True, help="pasta em results/experimentos")
     p_rob = sub.add_parser("robustness", help="reavalia um experimento em outras simulações")
     p_rob.add_argument("--exp-id", required=True, help="pasta em results/experimentos")
     p_rob.add_argument("--run-ids", nargs="+", required=True, help="execuções adicionais")
@@ -52,9 +59,9 @@ def main(argv: list[str] | None = None) -> int:
         sim, evaluation = experiment["simulation"], experiment["evaluation"]
         data_root = PROJECT_ROOT / sim["data_dir"]
         features_root = PROJECT_ROOT / evaluation["features_dir"]
-        if args.command == "robustness-plan":
-            model = load_model_config()
-            seeds = model.raw["robustness"]["simulation_seeds"]
+        if args.command in ("robustness-plan", "confirm-plan"):
+            section = "robustness" if args.command == "robustness-plan" else "confirmatory"
+            seeds = load_model_config().raw[section]["simulation_seeds"]
             run_ids = [_run_id(sim, seed) for seed in seeds]
             plan = {
                 "seeds": seeds,
@@ -63,6 +70,30 @@ def main(argv: list[str] | None = None) -> int:
                 "run_dirs": [f"{sim['data_dir']}/{run_id}" for run_id in run_ids],
             }
             print(json.dumps(plan))
+            return 0
+        if args.command in ("confirm", "ablation"):
+            settings = load_settings()
+            model = load_model_config(settings=settings)
+            exp_dir = _experiment_dir(PROJECT_ROOT / model.results_dir, args.exp_id)
+            development = [_run_id(sim, s) for s in model.raw["robustness"]["simulation_seeds"]]
+            confirmatory = [_run_id(sim, s) for s in model.raw["confirmatory"]["simulation_seeds"]]
+            missing = [
+                r for r in development + confirmatory if not (data_root / r / "run.json").exists()
+            ]
+            if missing:
+                raise ConfigError(
+                    f"simulações ausentes em {data_root}: {missing} "
+                    "(rode `tasks.py robustness` e `tasks.py confirm`)"
+                )
+            if args.command == "confirm":
+                out = run_confirmatory(
+                    exp_dir, development, confirmatory, data_root, features_root, settings
+                )
+            else:
+                reference = json.loads((exp_dir / "metrics.json").read_text(encoding="utf-8"))
+                runs = [reference["run_id"], *development, *confirmatory]
+                out = run_ablation(exp_dir, runs, data_root, features_root, settings)
+            print(out.read_text(encoding="utf-8"))
             return 0
         if args.command == "report":
             settings = load_settings()

@@ -4,6 +4,7 @@ numpy==2.5.4
 pandas==3.0.6
 pyarrow==26.0.0
 scikit-learn==1.9.1
+scipy==1.18.1                   # testes da Fase 7 (D52); já vinha com a scikit-learn
 PyYAML==6.0.3
 psycopg[binary]==3.3.6
 matplotlib==3.11.2

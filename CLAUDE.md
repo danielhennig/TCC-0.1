@@ -30,7 +30,8 @@ Ações do painel que mudam o estado de uma fonte (limpar, reprocessar) usam `St
 `setup` (recria tudo do zero) · `reset` · `smoke` · `bench` · `simulate [--days N --seed S]`
 (recria banco e logs e roda a simulação) · `retime` · `features [--window N --run-id ID]`
 (conjunto rotulado em `data/features/`) · `evaluate` (resultados em `results/experimentos/`)
-· `robustness --exp-id ID` · `report` (relatório do teste e figuras) · `fit`/`score` (SACLA
+· `robustness --exp-id ID` · `confirm --exp-id ID` (validação confirmatória pré-registrada, D52)
+· `ablation --exp-id ID` (ablação na validação) · `report` (relatório do teste e figuras) · `fit`/`score` (SACLA
 no uso real, sem rótulos) · `dashboard`/`dashboard-stop` (monitor + painel em
 http://localhost:8501) · `monitor --once` · `monitor-fit --source ID` · `build` (só a imagem)
 · `test` · `lint` · `fmt` · `lock` · `psql`
